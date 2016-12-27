@@ -1,4 +1,4 @@
 require_relative '../piece'
 
-class Knight
+class Knight < Piece
 end

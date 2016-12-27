@@ -1,4 +1,4 @@
 require_relative '../piece'
 
-class Rook
+class Rook < Piece
 end

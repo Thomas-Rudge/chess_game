@@ -1,4 +1,4 @@
 require_relative '../piece'
 
-class Queen
+class Queen < Piece
 end
