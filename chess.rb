@@ -10,19 +10,30 @@ class Game
   end
 
   def setup
+    @game_pieces.clear
+
     row = {0=>0, 1=>7}
 
     [0, 1].each do |colour| # 0 - White, 1 - Black
-      @game_pieces << Rook.new(colour, [0, row[colour]])
+      @game_pieces << Rook.new(  colour, [0, row[colour]])
       @game_pieces << Knight.new(colour, [1, row[colour]])
       @game_pieces << Bishop.new(colour, [2, row[colour]])
-      @game_pieces << King.new(colour, [3, row[colour]])
-      @game_pieces << Queen.new(colour, [4, row[colour]])
+      @game_pieces << King.new(  colour, [3, row[colour]])
+      @game_pieces << Queen.new( colour, [4, row[colour]])
       @game_pieces << Bishop.new(colour, [5, row[colour]])
       @game_pieces << Knight.new(colour, [6, row[colour]])
-      @game_pieces << Rook.new(colour, [7, row[colour]])
+      @game_pieces << Rook.new(  colour, [7, row[colour]])
       # Add the pawns
       8.times { |i| @game_pieces << Pawn.new(colour, [i, (row[colour]-1).abs]) }
     end
+  end
+
+  def start
+  end
+
+  private
+
+  def restart
+    ObjectSpace.each_object(Piece).each { |p| p.reset }
   end
 end
