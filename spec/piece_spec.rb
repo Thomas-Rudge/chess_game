@@ -3,7 +3,7 @@ Dir["../piece.rb"].each { |file| load file }
 
 
 describe Piece do
-  let (:piece) { Piece.new(0, [0,0]) }
+  let (:piece) { Piece.new(0, [0,0], [0, 7]) }
 
   it "will have colour and position" do
     expect(piece).to have_attributes(:colour=>0)

@@ -2,7 +2,7 @@ require 'spec_helper'
 require_relative '../pieces/king'
 
 describe King do
-  let (:king) { King.new(0, [0,0]) }
+  let (:king) { King.new(0, [0,0], [0, 7]) }
 
   describe "#valid_moves" do
     context "on the edge of the board" do

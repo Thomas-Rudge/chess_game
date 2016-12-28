@@ -1,0 +1,47 @@
+Game
+  #start
+
+Piece
+  @position
+  @colour
+  @history
+  #callout(position) (return your name and colour if you're in position)
+  #reset	(Puts the piece in position fow for a new game)
+  
+K, q, b, k, r, p
+King, Queen, Bishop, etc < Piece
+  @position	(On the board e.g [1,4])
+  @colour	(White-0 / Black-1)
+  #valid_moves	(Returns an array of valid positions based on current @position and @name
+
+/Reset all pieces (start a new game)
+ObjectSpace.each_object(Piece).each { |x| x.reset }
+
+Each piece contains its type, colour, and location on the board.
+Each piece uses its information to determine the valid squares it can move to.
+When a user inputs a move...
+   The system should check that there is a piece to move,
+   The piece should check that the move is valid,
+   The system should check whether another piece is in the place moved to,
+   The system should remove the piece if an opposite colour, or return invalid move.
+   If the piece removed is the King, call checkmate.
+   After each move the system should check whether the King can be reach by an opponents player, and call check if so. 
+
+  ___ ___ ___ ___ ___ ___ ___ ___
+7| r | k | b | q | K | b | k | r |
+ |___|___|___|___|___|___|___|___|
+6| p | p | p | p | p | p | p | p |
+ |___|___|___|___|___|___|___|___|
+5|   |   |   |   |   |   |   |   |
+ |___|___|___|___|___|___|___|___|
+4|   |   |   |   |   |   |   |   |
+ |___|___|___|___|___|___|___|___|
+3|   |   |   |   |   |   |   |   |
+ |___|___|___|___|___|___|___|___|
+2|   |   |   |   |   |   |   |   |
+ |___|___|___|___|___|___|___|___|
+1| p | p | p | p | p | p | p | p |
+ |___|___|___|___|___|___|___|___|
+0| r | k | b | q | K | b | k | r |
+ |___|___|___|___|___|___|___|___|
+   0   1   2   3   4   5   6   7

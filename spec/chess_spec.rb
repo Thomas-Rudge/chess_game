@@ -7,7 +7,7 @@ describe Game do
     it "will add a white & black king to @game_pieces array" do
       expect(game.game_pieces.count { |p| p.is_a? King }).to eql 2
       expect(game.game_pieces.select{ |p| p.is_a? King }.map { |k| k.colour }.inject(:+)).to eql 1
-      expect(game.game_pieces.select{ |p| p.is_a? King }.map { |k| k.position }).to include [3, 0], [3, 7]
+      expect(game.game_pieces.select{ |p| p.is_a? King }.map { |k| k.position }).to include [4, 0], [4, 7]
     end
 
     it "will add a white & black queen to @game_pieces array" do
@@ -34,5 +34,8 @@ describe Game do
       expect(game.game_pieces.count { |p| p.is_a? Pawn }).to eql 16
       expect(game.game_pieces.select{ |p| p.is_a? Pawn }.map { |p| p.colour }.inject(:+)).to eql 8
     end
+  end
+
+  describe "#castling" do
   end
 end

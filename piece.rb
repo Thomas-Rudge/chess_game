@@ -2,12 +2,14 @@ class Piece
 
   attr_accessor :position, :history
   attr_reader   :colour, :boundary
+  attr_writer   :catpured
 
-  def initialize(colour, position)
+  def initialize(colour, position, boundary)
     @colour   = colour
     @position = position
     @history  = [position]
-    @boundary = [0, 7]
+    @boundary = boundary
+    @captured = false
   end
 
   def callout(position)
@@ -63,4 +65,11 @@ class Piece
     positions.uniq!
     positions -= [@position]
   end
+
+  def captured
+    @captured
+  end
+
+  alias_method :captured?, :captured
+
 end
