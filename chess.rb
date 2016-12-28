@@ -29,11 +29,21 @@ class Game
   end
 
   def start
+
+  end
+
+  def restart
+    reposition
+    reset_game_history
   end
 
   private
 
-  def restart
+  def reposition
     ObjectSpace.each_object(Piece).each { |p| p.reset }
+  end
+
+  def reset_game_history
+    ObjectSpace.each_object(Piece).each { |p| p.clear_history }
   end
 end
