@@ -60,6 +60,7 @@ class Game
     king, rook = get_rook_and_king(corner)
     return -1 if rook.nil? || king.nil?
     # 3. There must be no pieces between the king and the rook;
+    range_between_pieces(rook.position, king.position)
     return -1 unless piece_between_points(rook.position, king.position).nil?
     # 4. The king may not currently be in check, nor may the king pass through
     #    or end up in a square that is under attack by an enemy piece (though the
@@ -84,36 +85,38 @@ class Game
     [king, rook]
   end
 
-  def piece_between_points(a, b)
-    # returns the first game piece found between two points on a board
-    temp_a = Piece.new(0, a, @boundary)
-    case # From the perspective of a
-    when a[0] == b[0]
-      range = temp_a.y_axes
-      range.select! { |x| (x[0].between? a[0], b[0]) && (x[1].between? a[1], b[1]) }
-    when a[1] == b[1]
-      range = temp_a.x_axes
-      range.select! { |x| (x[0].between? a[0], b[0]) && (x[1].between? a[1], b[1]) }
-    when a[0] < b[0] && a[1] < b[1]
-      range = temp_a.upper_right_verticles
-      range.select! { |x| (x[0].between? a[0], b[0]) && (x[1].between? a[1], b[1]) }
-    when a[0] > b[0] && a[1] > b[1]
-      range = temp_a.lower_left_verticles
-      range.select! { |x| (x[0].between? b[0], a[0]) && (x[1].between? b[1], a[1]) }
-    when a[0] < b[0] && a[1] > b[1]
-      range = temp_a.lower_right_verticles##!!!!!!!!!!!
-      range.select! { |x| (x[0].between? a[0], b[0]) && (x[1].between? b[1], a[1]) }
-    when a[0] > b[0] && a[1] < b[1]
-      range = temp_a.upper_left_verticles
-      range.select! { |x| (x[0].between? b[0], a[0]) && (x[1].between? a[1], b[1]) }
-    end
+  def range_between_pieces(a, b)
+    # returns the range between a & b. The returned range excludes a and b.
+    a, b = *[a, b].sort
+    temp_a    = Piece.new(0, a, @boundary)
+    in_range1 = Proc.new { |x| (x[0].between? a[0], b[0]) && (x[1].between? a[1], b[1]) }
+    in_range2 = Proc.new { |x| (x[0].between? a[0], b[0]) && (x[1].between? b[1], a[1]) }
 
-    val = nil
-    @game_pieces.each do |p|
-      range.each { |r| val = p.callout(r) ; break if val }
-      break if val
-    end
+    range =
+      case # From the perspective of "a"
+      when a[0] == b[0]                then (temp_a.y_axes).select!                &in_range1
+      when a[1] == b[1]                then (temp_a.x_axes).select!                &in_range1
+      when a[0] <  b[0] && a[1] < b[1] then (temp_a.upper_right_verticles).select! &in_range1
+      when a[0] <  b[0] && a[1] > b[1] then (temp_a.lower_right_verticles).select! &in_range2
+      end
 
-    val
+    range -= [a, b]
   end
+
+  def piece_in_range(range)
+    # returns the first game pieces found in a range, or nil
+    range.each do |r|
+      val = piece_in_position(r)
+      return val unless val.nil?
+    end; nil
+  end
+
+  def piece_in_position(position)
+    # returns any game pieces found in position, or nil
+    @game_pieces.each do |p|
+      val = p.callout(position)
+      return val unless val.nil?
+    end; nil
+  end
+
 end

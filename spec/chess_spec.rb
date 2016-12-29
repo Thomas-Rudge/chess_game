@@ -36,6 +36,27 @@ describe Game do
     end
   end
 
-  describe "#castling" do
+  describe "#attempt_castling" do
+  end
+
+  describe "#get_rook_and_king" do
+  end
+
+  describe "#range_between_pieces" do
+  end
+
+  describe "#piece_in_range" do
+    let (:range1) { game.range_between_pieces([2, 6], [2, 2]) }
+    let (:range2) { game.range_between_pieces([6, 3], [6, 7]) }
+    let (:range3) { game.range_between_pieces([2, 7], [7, 7]) }
+
+    it "returns nil if no pieces found" do
+      expect(game.piece_in_range(range1)).to be_nil
+    end
+
+    it "return the first piece found" do
+      expect(game.piece_in_range(range2)).to be_a(Pawn)
+      expect(game.piece_in_range(range3)).to be_a(Queen)
+    end
   end
 end
