@@ -27,6 +27,10 @@ When a user inputs a move...
    If the piece removed is the King, call checkmate.
    After each move the system should check whether the King can be reach by an opponents player, and call check if so. 
 
+
+Pieces will hold movement logic.
+Game class will hold game logic.
+
   ___ ___ ___ ___ ___ ___ ___ ___
 7| r | k | b | q | K | b | k | r |
  |___|___|___|___|___|___|___|___|
