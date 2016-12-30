@@ -57,12 +57,13 @@ class Game
     # Performs castling move with a rook and king. corner either :r or :l
     # 1. The king and rook involved in castling must not have previously moved;
     # 2. The king and the rook must be on the same rank.
+    # 3. The king may not currently be in check.
     king, rook = get_rook_and_king(corner)
     return -1 if rook.nil? || king.nil?
     # 3. There must be no pieces between the king and the rook;
-    range_between_pieces(rook.position, king.position)
-    return -1 unless piece_between_points(rook.position, king.position).nil?
-    # 4. The king may not currently be in check, nor may the king pass through
+    range = range_between_pieces(rook.position, king.position)
+    return -1 unless piece_in_range(range).empty?
+    # 4. The king may not pass through
     #    or end up in a square that is under attack by an enemy piece (though the
     #    rook is permitted to be under attack and to pass over an attacked square);
 
@@ -80,7 +81,7 @@ class Game
     end
 
     rook = nil unless rook.history.length.empty? && !rook.captured?
-    king = nil unless king.history.length.empty?
+    king = nil unless king.history.length.empty? && !king.in_check?
 
     [king, rook]
   end
@@ -103,12 +104,14 @@ class Game
     range -= [a, b]
   end
 
-  def piece_in_range(range)
-    # returns the first game pieces found in a range, or nil
+  def piece_in_range(range, pieces = Array.new)
+    # returns the game pieces found in a range, or nil
     range.each do |r|
       val = piece_in_position(r)
-      return val unless val.nil?
-    end; nil
+      pieces << val unless val.nil?
+    end
+
+    pieces
   end
 
   def piece_in_position(position)
@@ -118,5 +121,29 @@ class Game
       return val unless val.nil?
     end; nil
   end
+  #### C h E C K   K I N G   S T A T U S ###########################
+  def check_status_of_kings
+    kings = @game_pieces.select { |p| (p.is_a? King) }
 
+    kings.each do |k|
+      in_check = false
+
+      @game_pieces.each do |p|
+        next unless p.colour != k.colour
+        next if p.captured?
+
+        moves = p.valid_moves
+        next unless moves.include? k.position
+        # //TODO Need special case for pawn
+        if p.is_a? Knight # can jump
+          in_check = true
+        else # Check there is nothing in the way
+          range = range_between_pieces(p.position, k.position)
+          in_check = true if piece_in_range(range).empty?
+        end
+      end
+
+      k.in_check = in_checl
+    end
+  end
 end

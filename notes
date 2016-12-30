@@ -1,3 +1,10 @@
+The chess pieces will record their position and previous positions. They will 
+be capable of reporting which squares on the board they can move to.
+
+The game will be responsible for checking whether moves are possible, by asking 
+pieces where they are and where they can go. It will also be responsible for checking
+the status of pieces, and updating them accordingly. 
+
 Game
   #start
 
