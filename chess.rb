@@ -1,8 +1,8 @@
 Dir["pieces/*.rb"].each { |file| require_relative file }
-require_relative 'game_logic'
+require_relative 'board'
 
 class Game
-  include GameLogic
+  include Board
 
   attr_reader :game_pieces, :captured_pieces
 
@@ -41,8 +41,6 @@ class Game
     reset_game_history
   end
 
-  #private
-
   def reposition
     @game_pieces.each { |p| p.reset }
     @captured_pieces.clear
@@ -67,6 +65,14 @@ class Game
     #    or end up in a square that is under attack by an enemy piece (though the
     #    rook is permitted to be under attack and to pass over an attacked square);
 
+    case corner
+    when :l
+      king.position = [2, king.position[1]]
+      rook.position = [3, rook.position[1]]
+    when :r
+      king.position = [6, king.position[1]]
+      rook.position = [5, rook.position[1]]
+    end
   end
 
   def get_rook_and_king(corner)
@@ -121,8 +127,9 @@ class Game
       return val unless val.nil?
     end; nil
   end
-  #### C h E C K   K I N G   S T A T U S ###########################
-  def check_status_of_kings
+  #### U P D A T E   K I N G   S T A T U S ###########################
+  def update_status_of_kings
+    # Checks and updates the status of both kings, then returns them
     kings = @game_pieces.select { |p| (p.is_a? King) }
 
     kings.each do |k|
@@ -134,16 +141,18 @@ class Game
 
         moves = p.valid_moves
         next unless moves.include? k.position
-        # //TODO Need special case for pawn
+
         if p.is_a? Knight # can jump
           in_check = true
+        elsif (p.is_a? Pawn) && p.position[0] == k.position[0]
+          next
         else # Check there is nothing in the way
           range = range_between_pieces(p.position, k.position)
           in_check = true if piece_in_range(range).empty?
         end
       end
 
-      k.in_check = in_checl
+      k.in_check = in_check
     end
   end
 end

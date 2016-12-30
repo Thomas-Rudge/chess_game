@@ -56,3 +56,6 @@ Game class will hold game logic.
 0| r | k | b | q | K | b | k | r |
  |___|___|___|___|___|___|___|___|
    0   1   2   3   4   5   6   7
+
+"\e[40m\e[37m" BLACK
+"\e[47m\e[30m" WHITE
