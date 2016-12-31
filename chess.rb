@@ -5,12 +5,14 @@ class Game
   include Board
 
   attr_reader :game_pieces, :captured_pieces
+  attr_writer :checkmate
 
   def initialize
     @game_pieces     = Array.new
     @captured_pieces = Array.new
     @boundary        = [0, 7]
     @turn            = 0 # corresponds with Piece @colour
+    @checkmate       = false
 
     setup
   end
@@ -33,7 +35,14 @@ class Game
   end
 
   def start
+    until checkmate?
+      clear_screen
+      print_board
+      take_turns
+    end
 
+    print_winner(@turn*-1)
+    ask_replay ? restart : finish
   end
 
   def restart
@@ -50,6 +59,46 @@ class Game
     @game_pieces.each { |p| p.clear_history }
     @turn = 0
   end
+
+  def take_turns
+    # Goes through the logic of each turn. It's a bit of a long method :/
+    loop do
+      # Get a response from the player
+      move = request_move(@turn, @boundary)
+      finish if ["q", "quit", "exit"].include? move
+      # If the response isn't in a valid format "1,2 3,4", then reject it.
+      move = check_response(@turn, @boundary)
+      if response[1] == false
+        puts "That move is not valid."
+        next
+      end
+      # Check that there is a piece in the first position,
+      # and that the player is permitted to move it.
+      to_move = piece_in_position(move[0])
+      if to_move.nil?
+        puts "There is nothing in square #{move[0]}."
+        next
+      elsif to_move.colour != @turn
+        puts "That is not your piece to move."
+        next
+      end
+      # Check there is nothing blocking the move, unless it's a knight.
+      unless to_move.class == Knight
+        move_range = range_between_pieces(*move)
+        in_way = pieces_in_range(move_range)
+        if !in_way.empty?
+          puts "One or more pieces are blocking that move."
+          next
+        end
+      end
+      # Check whether a piece is being taken
+
+    end
+
+
+  end
+########### M O V E   L O G I C ################################
+
 ########### C A S T L I N G ###############################################
   def attempt_castling(corner)
     # Performs castling move with a rook and king. corner either :r or :l
@@ -60,7 +109,7 @@ class Game
     return -1 if rook.nil? || king.nil?
     # 3. There must be no pieces between the king and the rook;
     range = range_between_pieces(rook.position, king.position)
-    return -1 unless piece_in_range(range).empty?
+    return -1 unless pieces_in_range(range).empty?
     # 4. The king may not pass through
     #    or end up in a square that is under attack by an enemy piece (though the
     #    rook is permitted to be under attack and to pass over an attacked square);
@@ -110,7 +159,7 @@ class Game
     range -= [a, b]
   end
 
-  def piece_in_range(range, pieces = Array.new)
+  def pieces_in_range(range, pieces = Array.new)
     # returns the game pieces found in a range, or nil
     range.each do |r|
       val = piece_in_position(r)
@@ -130,7 +179,7 @@ class Game
   #### U P D A T E   K I N G   S T A T U S ###########################
   def update_status_of_kings
     # Checks and updates the status of both kings, then returns them
-    kings = @game_pieces.select { |p| (p.is_a? King) }
+    kings = get_kings
 
     kings.each do |k|
       in_check = false
@@ -148,11 +197,21 @@ class Game
           next
         else # Check there is nothing in the way
           range = range_between_pieces(p.position, k.position)
-          in_check = true if piece_in_range(range).empty?
+          in_check = true if pieces_in_range(range).empty?
         end
       end
 
       k.in_check = in_check
     end
   end
+
+  def get_kings
+    @game_pieces.select { |p| (p.is_a? King) }
+  end
+
+  def finish
+    exit
+  end
+  ###### G E T T E R S #####################
+  def checkmate?; @checkmate end
 end

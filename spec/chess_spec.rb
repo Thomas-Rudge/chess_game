@@ -51,12 +51,12 @@ describe Game do
     let (:range3) { game.range_between_pieces([2, 7], [7, 7]) }
 
     it "returns nil if no pieces found" do
-      expect(game.piece_in_range(range1)).to be_nil
+      expect(game.piece_in_range(range1)).to be_empty
     end
 
     it "return the first piece found" do
-      expect(game.piece_in_range(range2)).to be_a(Pawn)
-      expect(game.piece_in_range(range3)).to be_a(Queen)
+      expect(game.piece_in_range(range2)).to include(a_kind_of(Pawn))
+      expect(game.piece_in_range(range3)).to include(a_kind_of(Queen))
     end
   end
 end

@@ -20,10 +20,5 @@ class King < Piece
     moves -= [@position]
   end
 
-  def in_check
-    @in_check
-  end
-
-  alias_method :in_check?, :in_check
-
+  def in_check?; @in_check end
 end

@@ -97,15 +97,10 @@ class Piece
     positions[1..-1]
   end
 ##### S E T T E R S  n  G E T T E R S ########################
-  def captured
-    @captured
-  end
+  def captured?; @captured end
 
   def position=(value)
     @history << @position
     @position = value
   end
-
-  alias_method :captured?, :captured
-
 end
