@@ -66,6 +66,15 @@ class Game
       # Get a response from the player
       move = request_move(@turn, @boundary)
       finish if ["q", "quit", "exit"].include? move
+      # Check if castling
+      if ["cl", "cr"].include? move
+        castled = attempt_castling(move[1].to_sym)
+        unless castled
+          puts "Castling is not possible at this time."
+          next
+        end
+        break
+      end
       # If the response isn't in a valid format "1,2 3,4", then reject it.
       move = check_response(move, @boundary)
       if move[1] == false
@@ -122,12 +131,14 @@ class Game
       end
 
       to_move.position = move[1]
-      @turn ^= 1
       break
     end
+
+    @turn ^= 1
+    update_status_of_kings
   end
 ########### M O V E   L O G I C ################################
-
+# //TODO Move some of the take_turns logic down here when refactoring
 ########### C A S T L I N G ###############################################
   def attempt_castling(corner)
     # Performs castling move with a rook and king. corner either :r or :l
@@ -135,11 +146,11 @@ class Game
     # 2. The king and the rook must be on the same rank.
     # 3. The king may not currently be in check.
     king, rook = get_rook_and_king(corner)
-    return -1 if rook.nil? || king.nil?
+    return false if rook.nil? || king.nil?
     # 3. There must be no pieces between the king and the rook;
     range = range_between_pieces(rook.position, king.position)
-    return -1 unless pieces_in_range(range).empty?
-    # 4. The king may not pass through
+    return false unless pieces_in_range(range).empty?
+    # //TODO 4. The king may not pass through
     #    or end up in a square that is under attack by an enemy piece (though the
     #    rook is permitted to be under attack and to pass over an attacked square);
 
@@ -150,22 +161,22 @@ class Game
     when :r
       king.position = [6, king.position[1]]
       rook.position = [5, rook.position[1]]
-    end
+    end; true
   end
 
   def get_rook_and_king(corner)
     # Returns the king and rook that can be used for castling
-    king  = @game_pieces.select { |p| (p.is_a? King) && p.colour == @turn }
-    rooks = @game_pieces.select { |r| (r.is_a? Rook) && p.colour == @turn }
+    king  = @game_pieces.select { |p| (p.is_a? King) && p.colour == @turn }[0]
+    rooks = @game_pieces.select { |r| (r.is_a? Rook) && r.colour == @turn }
 
     if corner == :r
-      rook = rooks.select { |r| r.position[0] == @boundary[1] }
+      rook = rooks.select { |r| r.position[0] == @boundary[1] }[0]
     else
-      rook = rooks.select { |r| r.position[0] == @boundary[0] }
+      rook = rooks.select { |r| r.position[0] == @boundary[0] }[0]
     end
 
-    rook = nil unless rook.history.length.empty? && !rook.captured?
-    king = nil unless king.history.length.empty? && !king.in_check?
+    rook = nil unless (rook.is_a? Rook) && rook.history.empty? && !rook.captured?
+    king = nil unless king.history.empty? && !king.in_check?
 
     [king, rook]
   end
@@ -179,10 +190,10 @@ class Game
 
     range =
       case # From the perspective of "a"
-      when a[0] == b[0]                then (temp_a.y_axes).select!                &in_range1
-      when a[1] == b[1]                then (temp_a.x_axes).select!                &in_range1
-      when a[0] <  b[0] && a[1] < b[1] then (temp_a.upper_right_verticles).select! &in_range1
-      when a[0] <  b[0] && a[1] > b[1] then (temp_a.lower_right_verticles).select! &in_range2
+      when a[0] == b[0]                then (temp_a.y_axes).select!               &in_range1
+      when a[1] == b[1]                then (temp_a.x_axes).select!               &in_range1
+      when a[0] <  b[0] && a[1] < b[1] then (temp_a.upper_right_verticles).select &in_range1
+      when a[0] <  b[0] && a[1] > b[1] then (temp_a.lower_right_verticles).select &in_range2
       end
 
     range -= [a, b]

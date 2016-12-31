@@ -22,21 +22,25 @@ module Board
 
   def print_board(pieces)
     pieces = hashify_pieces(pieces)
+    sign = [[" "," "," "," ","\033[1;34mL\033[0m"," "," "," "],
+            [" "," "," "," ","\033[1;34mR\033[0m"," "," "," "]]
+
     7.downto(0) do |y|
-      print "#{PFX}#{y} "
+      print "#{PFX} #{sign[0].pop}  #{y} "
       0.upto(7) do |x|
         p = pieces[[x, y]]
         p = p.nil? ? " " : UTFC[p.colour][p.class.to_s]
         print "#{UTFC[x.even? == y.even?]} #{p} \033[0m"
       end
-      print "\n#{PFX}  "
+      print "  #{sign[1].pop}\n#{PFX}      "
+
       0.upto(7) do |x|
         print "#{UTFC[x.even? == y.even?]}   \033[0m"
       end
       print "\n"
     end
 
-    print "#{PFX}   0  1  2  3  4  5  6  7"
+    print "#{PFX}       0  1  2  3  4  5  6  7\n\n"
   end
 
   def hashify_pieces(pieces, hash=Hash.new)
