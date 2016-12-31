@@ -43,7 +43,7 @@ module Board
     # Creates a hash where the key is the board position,
     # and the value is the game piece at that position.
     [*(0..7)].product([*(0..7)]).each do |square|
-      pieces.each { |p| hash[square] = p if p.position == square }
+      pieces.each { |p| hash[square] = p if p.position == square && !p.captured? }
     end
 
     hash

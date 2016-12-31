@@ -37,11 +37,11 @@ class Game
   def start
     until checkmate?
       clear_screen
-      print_board
+      print_board(@game_pieces)
       take_turns
     end
 
-    print_winner(@turn*-1)
+    print_winner(@turn^1)
     ask_replay ? restart : finish
   end
 
@@ -67,10 +67,12 @@ class Game
       move = request_move(@turn, @boundary)
       finish if ["q", "quit", "exit"].include? move
       # If the response isn't in a valid format "1,2 3,4", then reject it.
-      move = check_response(@turn, @boundary)
-      if response[1] == false
+      move = check_response(move, @boundary)
+      if move[1] == false
         puts "That move is not valid."
         next
+      else
+        move = move[0]
       end
       # Check that there is a piece in the first position,
       # and that the player is permitted to move it.
@@ -80,6 +82,11 @@ class Game
         next
       elsif to_move.colour != @turn
         puts "That is not your piece to move."
+        next
+      end
+      # Check that the target square is a valid move for the piece
+      unless to_move.valid_moves.include? move[1]
+        puts "That is not a valid move for a #{to_move.class}."
         next
       end
       # Check there is nothing blocking the move, unless it's a knight.
@@ -92,10 +99,32 @@ class Game
         end
       end
       # Check whether a piece is being taken
+      move_to = piece_in_position(move[1])
+      if move_to.nil?
+        if (to_move.is_a? Pawn) && move[0][0] != move[1][0]
+          puts "Pawns move forward and capture diagonally."
+          next
+        end
+      else
+        if move_to.colour == @turn
+          puts "You cannot take your own #{move_to.class}."
+          next
+        else
+          if to_move.is_a? Pawn
+            if move_to.position[0] == to_move.position[0]
+              puts "Pawns move forward and capture diagonally."
+              next
+            end
+          end
+          move_to.captured = true
+          captured_pieces << move_to
+        end
+      end
 
+      to_move.position = move[1]
+      @turn ^= 1
+      break
     end
-
-
   end
 ########### M O V E   L O G I C ################################
 

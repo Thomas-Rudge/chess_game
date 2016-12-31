@@ -2,7 +2,7 @@ class Piece
 
   attr_accessor :history
   attr_reader   :colour, :boundary, :position
-  attr_writer   :catpured
+  attr_writer   :captured
 
   def initialize(colour, position, boundary)
     @colour   = colour
