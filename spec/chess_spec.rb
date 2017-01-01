@@ -45,18 +45,18 @@ describe Game do
   describe "#range_between_pieces" do
   end
 
-  describe "#piece_in_range" do
-    let (:range1) { game.range_between_pieces([2, 6], [2, 2]) }
-    let (:range2) { game.range_between_pieces([6, 3], [6, 7]) }
-    let (:range3) { game.range_between_pieces([2, 7], [7, 7]) }
+  describe "#pieces_in_range" do
+    let (:range1) { [[2, 6], [2, 2]] }
+    let (:range2) { [[6, 3], [6, 7]] }
+    let (:range3) { [[2, 7], [7, 7]] }
 
     it "returns nil if no pieces found" do
-      expect(game.piece_in_range(range1)).to be_empty
+      expect(game.pieces_in_range(*range1)).to be_empty
     end
 
     it "return the first piece found" do
-      expect(game.piece_in_range(range2)).to include(a_kind_of(Pawn))
-      expect(game.piece_in_range(range3)).to include(a_kind_of(Queen))
+      expect(game.pieces_in_range(*range2)).to include(a_kind_of(Pawn))
+      expect(game.pieces_in_range(*range3)).to include(a_kind_of(Queen))
     end
   end
 end

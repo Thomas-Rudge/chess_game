@@ -85,6 +85,23 @@ module Board
     return (["y", "yes", "ok"].include? response) ? true : false
   end
 
+  def print_message(type, *args)
+    case type
+    when 0  then puts "Castling is not possible at this time."
+    when 1  then puts "That move is not valid."
+    when 2  then puts "There is nothing in square #{args[0]}."
+    when 3  then puts "You cannot move an opponents piece."
+    when 4  then puts "That is not a valid move for a #{args[0]}."
+    when 5  then puts "One or more pieces are blocking that move."
+    when 6  then puts "Pawns move forward and capture diagonally."
+    when 7  then puts "You cannot take your own #{args[0]}."
+    when 8  then puts "You cannot place your King in check."
+    when 9  then puts "The #{PLAYERS[args[0]]} King is in check!"
+    when 10 then puts "Checkmate! Player #{PLAYERS[args[0]^1]} wins!"
+    else        puts "Unknown message type: #{type}"
+    end
+  end
+
   def clear_screen
     RUBY_PLATFORM =~ /win32|win64|\.NET|windows|cygwin|mingw32/i ? system("cls") : system("clear")
   end

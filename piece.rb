@@ -4,11 +4,12 @@ class Piece
   attr_reader   :colour, :boundary, :position
   attr_writer   :captured
 
-  def initialize(colour, position, boundary)
+  def initialize(colour, position, boundary, game)
     @colour   = colour
     @position = position
     @history  = Array.new
     @boundary = boundary
+    @game     = game
     @captured = false
   end
 
@@ -26,75 +27,159 @@ class Piece
   end
 ###### G E T T I N G   N O D E S #####################
   def xy_nodes_from_position(positions = Array.new)
-    positions += x_axes
-    positions += y_axes
+    valid1, take1 = *x_axes
+    valid2, take2 = *y_axes
+
+    positions << valid1 + valid2
+    positions << take1  + take2
 
     positions
   end
 
   def verticle_nodes_from_position(positions = Array.new)
-    positions += upper_right_verticles
-    positions += upper_left_verticles
-    positions += lower_left_verticles
-    positions += lower_right_verticles
+    valid1, take1 = *upper_right_verticles
+    valid2, take2 = *upper_left_verticles
+    valid3, take3 = *lower_left_verticles
+    valid4, take4 = *lower_right_verticles
+
+    positions << valid1 + valid2 + valid3 + valid4
+    positions << take1  + take2  + take3  + take4
 
     positions
   end
 
-  def y_axes(positions = Array.new)
-    [@position[0]].product([*(@boundary[0]..@boundary[1])]).each do |p|
-      positions << p unless p == @position
+  def y_axes(positions = [[], []])
+    # From position go up until you hit something
+    loop.with_index(1) do |_, i|
+      val = [@position[0], @position[1] + i]
+      break unless val_in_bounds?(val)
+
+      unless @game.piece_in_position(val).nil?
+        positions[1] << val
+        break
+      end
+
+      positions[0] << val
+    end
+    # From position go up until you hit something
+    loop.with_index(1) do |_, i|
+      val = [@position[0], @position[1] - i]
+      break unless val_in_bounds?(val)
+
+      unless @game.piece_in_position(val).nil?
+        positions[1] << val
+        break
+      end
+
+      positions << val
     end
 
     positions
   end
 
-  def x_axes(positions = Array.new)
-    [@position[1]].product([*(@boundary[0]..@boundary[1])]).each do |p|
-      positions << [p[1], p[0]] unless [p[1], p[0]] == @position
+  def x_axes(positions = [[], []])
+    # From position go right until you hit something
+    loop.with_index(1) do |_, i|
+      val = [@position[0] + i, @position[1]]
+      break unless val_in_bounds?(val)
+
+      unless @game.piece_in_position(val).nil?
+        positions[1] << val
+        break
+      end
+
+      positions[0] << val
+    end
+    # From position go left until you hit something
+    loop.with_index(1) do |_, i|
+      val = [@position[0] - i, @position[1]]
+      break unless val_in_bounds?(val)
+
+      unless @game.piece_in_position(val).nil?
+        positions[1] << val
+        break
+      end
+
+      positions[0] << val
     end
 
     positions
   end
 
-  def upper_right_verticles(positions = Array.new)
+  def upper_right_verticles(positions = [[], []])
     # Add upper right verticles
-    loop.with_index do |_, i|
-      positions << [@position[0] + i, @position[1] + i]
-      break if positions[-1][0] == @boundary[1] || positions[-1][1] == @boundary[1]
+    loop.with_index(1) do |_, i|
+      val = [@position[0] + i, @position[1] + i]
+      break unless val_in_bounds?(val)
+
+      unless @game.piece_in_position(val).nil?
+        positions[1] << val
+        break
+      end
+
+      positions[0] << val
     end
 
-    positions[1..-1]
+    positions
   end
 
-  def lower_left_verticles(positions = Array.new)
+  def lower_left_verticles(positions = [[], []])
     # Add lower left verticles
-    loop.with_index do |_, i|
-      positions << [@position[0] - i, @position[1] - i]
-      break if positions[-1][0] == @boundary[0] || positions[-1][1] == @boundary[0]
+    loop.with_index(1) do |_, i|
+      val = [@position[0] - i, @position[1] - i]
+      break unless val_in_bounds?(val)
+
+      unless @game.piece_in_position(val).nil?
+        positions[1] << val
+        break
+      end
+
+      positions[0] << val
     end
 
-    positions[1..-1]
+    positions
   end
 
-  def upper_left_verticles(positions = Array.new)
+  def upper_left_verticles(positions = [[], []])
     # Add upper left verticles
-    loop.with_index do |_, i|
-      positions << [@position[0] - i, @position[1] + i]
-      break if positions[-1][0] == @boundary[0] || positions[-1][1] == @boundary[1]
+    loop.with_index(1) do |_, i|
+      val = [@position[0] - i, @position[1] + i]
+      break unless val_in_bounds?(val)
+
+      unless @game.piece_in_position(val).nil?
+        positions[1] << val
+        break
+      end
+
+      positions[0] << val
     end
 
-    positions[1..-1]
+    positions
   end
 
-  def lower_right_verticles(positions = Array.new)
+  def lower_right_verticles(positions = [[], []])
     # Add lower right verticles
-    loop.with_index do |_, i|
-      positions << [@position[0] + i, @position[1] - i]
-      break if positions[-1][0] == @boundary[1] || positions[-1][1] == @boundary[0]
+    loop.with_index(1) do |_, i|
+      val = [@position[0] + i, @position[1] - i]
+
+      break unless val_in_bounds?(val)
+
+      unless @game.piece_in_position(val).nil?
+        positions[1] << val
+        break
+      end
+
+      positions[0] << val
     end
 
-    positions[1..-1]
+    positions
+  end
+
+  def val_in_bounds?(val)
+    [
+      !(val[0].between? *@boundary),             # Broken lower boundary?
+      !(val[1].between? *@boundary),             # Broken upper boundary?
+    ].none?
   end
 ##### S E T T E R S  n  G E T T E R S ########################
   def captured?; @captured end

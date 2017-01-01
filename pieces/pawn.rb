@@ -1,16 +1,24 @@
 require_relative '../piece'
 
 class Pawn < Piece
-  def valid_moves
-    moves = Array.new
+  def valid_moves(positions = [[], []])
     direction = {0=>1, 1=>-1}
 
-    moves << [@position[0], @position[1] + direction[@colour]]
-    moves << [@position[0] - 1,  @position[1] + direction[@colour]]
-    moves << [@position[0] + 1,  @position[1] + direction[@colour]]
+    moves = Array.new
 
-    moves << [@position[0], @position[1] + direction[@colour] * 2] if @history.empty?
+    moves << [@position[0],     @position[1] + direction[@colour]]
+    moves << [@position[0] - 1, @position[1] + direction[@colour]]
+    moves << [@position[0] + 1, @position[1] + direction[@colour]]
+    moves << [@position[0],     @position[1] + direction[@colour] * 2] if @history.empty?
 
-    moves.select { |x| (x[0].between? *@boundary) && (x[1].between? *@boundary) }
+    moves.each do |p|
+      if !@game.piece_in_position(p).nil?
+        positions[1] << p
+      elsif (p[0].between? *@boundary) && (p[1].between? *@boundary)
+        positions[0] << p
+      end
+    end
+
+    positions
   end
 end

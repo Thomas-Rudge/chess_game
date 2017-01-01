@@ -3,7 +3,7 @@ be capable of reporting which squares on the board they can move to.
 
 The game will be responsible for checking whether moves are possible, by asking 
 pieces where they are and where they can go. It will also be responsible for checking
-the status of pieces, and updating them accordingly. 
+the status of pieces, and updating them accordingly.
 
 Game
   #start
@@ -59,3 +59,12 @@ Game class will hold game logic.
 
 "\e[40m\e[37m" BLACK
 "\e[47m\e[30m" WHITE
+
+Checkmate
+  These must be know..
+    Whether the King can move away
+    Whether the King can be defended
+  To accommodate..
+    A player making a move other than that which removes checkmate
+    A player's king being captured
+ 
