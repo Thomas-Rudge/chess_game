@@ -194,10 +194,10 @@ class Game
 
     range =
       case # From the perspective of "a"
-      when a[0] == b[0]                then (temp_a.y_axes[0]).select                &in_range1
-      when a[1] == b[1]                then (temp_a.x_axes[0]).select                &in_range1
-      when a[0] <  b[0] && a[1] < b[1] then (temp_a.upper_right_verticles[0]).select &in_range1
-      when a[0] <  b[0] && a[1] > b[1] then (temp_a.lower_right_verticles[0]).select &in_range2
+      when a[0] == b[0]                then (temp_a.y_axes.flatten(1)).select                &in_range1
+      when a[1] == b[1]                then (temp_a.x_axes.flatten(1)).select                &in_range1
+      when a[0] <  b[0] && a[1] < b[1] then (temp_a.upper_right_verticles.flatten(1)).select &in_range1
+      when a[0] <  b[0] && a[1] > b[1] then (temp_a.lower_right_verticles.flatten(1)).select &in_range2
       end
 
     range -= [a, b]

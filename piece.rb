@@ -61,9 +61,10 @@ class Piece
 
       positions[0] << val
     end
-    # From position go up until you hit something
+    # From position go down until you hit something
     loop.with_index(1) do |_, i|
       val = [@position[0], @position[1] - i]
+
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
@@ -71,7 +72,7 @@ class Piece
         break
       end
 
-      positions << val
+      positions[0] << val
     end
 
     positions
