@@ -37,12 +37,60 @@ describe Game do
   end
 
   describe "#attempt_castling" do
-  end
+    it "will perform castling to the right when nothing is in the way" do
+      game.pieces_in_range([4, 0], [7, 0]).each { |p| p.captured = true }
+      game.attempt_castling(:r)
+      expect(game.piece_in_position([6, 0])).to be_instance_of(King)
+      expect(game.piece_in_position([5, 0])).to be_instance_of(Rook)
+    end
 
-  describe "#get_rook_and_king" do
+    it "will perform castlig to the left when nothing is in the way" do
+      game.pieces_in_range([0, 0], [4, 0]).each { |p| p.captured = true }
+      game.attempt_castling(:l)
+      expect(game.piece_in_position([2, 0])).to be_instance_of(King)
+      expect(game.piece_in_position([3, 0])).to be_instance_of(Rook)
+    end
+
+    it "will not castle when something is in the way" do
+      game.attempt_castling(:l)
+      expect(game.piece_in_position([2, 0])).to be_instance_of(Bishop)
+      expect(game.piece_in_position([3, 0])).to be_instance_of(Queen)
+    end
+
+    it "will not castle if the King has been moved" do
+      game.pieces_in_range([0, 0], [4, 0]).each { |p| p.captured = true }
+      game.piece_in_position([4, 0]).position = [3, 0]
+      game.piece_in_position([3, 0]).position = [4, 0]
+      game.attempt_castling(:l)
+      expect(game.piece_in_position([2, 0])).to be_nil
+      expect(game.piece_in_position([3, 0])).to be_nil
+    end
+
+    it "will not castle if the Rook has been moved" do
+      game.pieces_in_range([4, 0], [7, 0]).each { |p| p.captured = true }
+      game.piece_in_position([7, 0]).position = [6, 0]
+      game.piece_in_position([6, 0]).position = [7, 0]
+      game.attempt_castling(:r)
+      expect(game.piece_in_position([6, 0])).to be_nil
+      expect(game.piece_in_position([5, 0])).to be_nil
+    end
+
+    it "will not castle if the king will pass through, or land on, a square under attack" do
+      game.pieces_in_range([0, 0], [4, 0]).each { |p| p.captured = true }
+      game.piece_in_position([2, 1]).captured = true
+      game.piece_in_position([7, 7]).position = [2, 2]
+      game.attempt_castling(:l)
+      expect(game.piece_in_position([2, 0])).to be_nil
+      expect(game.piece_in_position([3, 0])).to be_nil
+    end
   end
 
   describe "#range_between_pieces" do
+    it "will give all squares between two positions on the board" do
+      expect(game.range_between_pieces([3, 0], [3, 7]).sort).to eql [[3, 1], [3, 2], [3, 3],
+                                                                     [3, 4], [3, 5], [3, 6]]
+      expect(game.range_between_pieces([7, 0], [3, 4]).sort).to eql [[4, 3], [5, 2], [6, 1]]
+    end
   end
 
   describe "#pieces_in_range" do

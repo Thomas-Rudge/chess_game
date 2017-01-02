@@ -7,13 +7,13 @@ class Game
   attr_reader :game_pieces, :squares
   attr_writer :checkmate
 
-  def initialize
+  def initialize(*args)
     @game_pieces     = Array.new
     @boundary        = [0, 7]
     @turn            = 0 # corresponds with Piece @colour
     @checkmate       = false
 
-    setup
+    setup unless args.include? "empty"
   end
 
   def setup
@@ -139,6 +139,15 @@ class Game
     end
   end
 
+  def get_attackers_of_position(position, attackers = Array.new)
+    @game_pieces.each do |piece|
+      next if piece.colour == @turn
+      attackers << piece if piece.valid_moves.flatten(1).include? position
+    end
+
+    attackers
+  end
+
   def check_checkmate
     # Checks the kings status 0 - Not in check, 1 - Check, 2 - Checkmate
     king = update_status_of_kings.select { |k| k.colour == @turn }[0]
@@ -154,9 +163,12 @@ class Game
     return false if rook.nil? || king.nil?
     # 3. There must be no pieces between the king and the rook;
     return false unless pieces_in_range(rook.position, king.position).empty?
-    # //TODO 4. The king may not pass through
-    #    or end up in a square that is under attack by an enemy piece (though the
-    #    rook is permitted to be under attack and to pass over an attacked square);
+    # 4. The king cannot move to a square under attack (i.e move into check)
+    # 5. The king may not pass through a square under attack
+    range_between_pieces(rook.position, king.position).each do |position|
+      next if position[0] < 2 # For castling to the left
+      return false unless get_attackers_of_position(position).empty?
+    end
 
     case corner
     when :l
@@ -188,16 +200,17 @@ class Game
   def range_between_pieces(a, b)
     # returns the range between a & b. The returned range excludes a and b.
     a, b = *[a, b].sort
-    temp_a    = Piece.new(0, a, @boundary, self)
+    temp_g    = Game.new("empty")
+    temp_a    = Piece.new(0, a, @boundary, temp_g)
     in_range1 = Proc.new { |x| (x[0].between? a[0], b[0]) && (x[1].between? a[1], b[1]) }
     in_range2 = Proc.new { |x| (x[0].between? a[0], b[0]) && (x[1].between? b[1], a[1]) }
 
     range =
       case # From the perspective of "a"
-      when a[0] == b[0]                then (temp_a.y_axes.flatten(1)).select                &in_range1
-      when a[1] == b[1]                then (temp_a.x_axes.flatten(1)).select                &in_range1
-      when a[0] <  b[0] && a[1] < b[1] then (temp_a.upper_right_verticles.flatten(1)).select &in_range1
-      when a[0] <  b[0] && a[1] > b[1] then (temp_a.lower_right_verticles.flatten(1)).select &in_range2
+      when a[0] == b[0]                then (temp_a.y_axes[0]).select                &in_range1
+      when a[1] == b[1]                then (temp_a.x_axes[0]).select                &in_range1
+      when a[0] <  b[0] && a[1] < b[1] then (temp_a.upper_right_verticles[0]).select &in_range1
+      when a[0] <  b[0] && a[1] > b[1] then (temp_a.lower_right_verticles[0]).select &in_range2
       end
 
     range -= [a, b]
