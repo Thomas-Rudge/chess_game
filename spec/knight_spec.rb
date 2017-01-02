@@ -2,7 +2,7 @@ require 'spec_helper'
 require_relative '../pieces/knight'
 
 describe Knight do
-  let (:game) { Game.new }
+  let (:game) { Game.new("empty") }
   let (:knight) { Knight.new(0, [0,0], [0, 7], game) }
 
   describe "#valid_moves" do

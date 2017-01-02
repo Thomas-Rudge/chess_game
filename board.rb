@@ -25,6 +25,7 @@ module Board
     sign = [[" "," "," "," ","\033[1;34mL\033[0m"," "," "," "],
             [" "," "," "," ","\033[1;34mR\033[0m"," "," "," "]]
 
+    print "\n\n"
     7.downto(0) do |y|
       print "#{PFX} #{sign[0].pop}  #{y} "
       0.upto(7) do |x|

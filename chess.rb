@@ -38,6 +38,7 @@ class Game
       clear_screen
       print_board(@game_pieces)
       take_turns
+      pawn_promotion
       check_checkmate
     end
 
@@ -142,7 +143,7 @@ class Game
   end
 
   def pawn_promotion
-    @game_pieces.select { |p| p.is_a? Pawn }.each do |pawn|
+    @game_pieces.select { |p| (p.is_a? Pawn) && !p.captured? }.each do |pawn|
       if (pawn.colour == 0 && pawn.position[1] == @boundary[1]) ||
          (pawn.colour == 1 && pawn.position[1] == @boundary[0])
         pawn.captured = true
@@ -152,8 +153,53 @@ class Game
   end
 
   def check_checkmate
-    # Checks the kings status 0 - Not in check, 1 - Check, 2 - Checkmate
-    king = update_status_of_kings.select { |k| k.colour == @turn }[0]
+    # WHAT IF A PAWN CANT MOVE!!
+    king = get_kings.select { |k| k.colour == @turn }[0]
+    # If you're not in check, and you have other pieces to move, then continue
+    unless king.in_check?
+      if @game_pieces.select { |p| p.colour == @turn && !p.captured? }.length > 1
+        return
+      else
+        moves = king.valid_moves.flatten(1)
+        nope  = Array.new
+        moves.each { |m| nope << m unless get_attackers_of_position(m, @turn).empty?}
+        if (moves - nope).empty?
+          @checkmate = true
+          return
+        end
+      end
+    end
+
+    attackers = get_attackers_of_position(king.position, @turn)
+    puts "#{attackers.length} attackers"
+    # See if the king can move
+    king.valid_moves.flatten(1).each do |square|
+      return if get_attackers_of_position(square, @turn).empty?
+    end
+    puts "#{king.colour} in check"
+    puts "Cannot move out of the way"
+    if attackers.length == 1
+      puts "Only one attacker"
+      attacker = attackers[0]
+      # See if the user can capture the attacker
+      game_pieces.select { |p| p.colour == @turn }.each do |piece|
+        return if piece.valid_moves[1].include? attacker.position
+      end
+      puts "Cannot be captured"
+      # See if the user can block the attacker
+      unless (attacker.is_a? Knight) || (attacker.is_a? Pawn)
+        attack_range = range_between_pieces(attacker.position, king.position)
+        game_pieces.select { |p| p.colour == @turn }.each do |piece|
+          moves = piece.valid_moves
+          return if attack_range.length > (attack_range - moves).length
+        end
+      end
+      puts "Cannot be blocked"
+      # See if the attacker(s) can be blocked
+
+    end
+    puts "Checkmate"
+    @checkmate = true
   end
 ########### C A S T L I N G ###############################################
   def attempt_castling(corner)

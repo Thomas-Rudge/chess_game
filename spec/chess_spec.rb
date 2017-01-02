@@ -146,9 +146,13 @@ describe Game do
       game.pawn_promotion
 
       expect(game.piece_in_position([3, 7])).to be_an_instance_of(Queen)
+      expect(game.game_pieces.select { |p| p.position == [3,7] && !p.captured? }.length ).to eql 1
       expect(game.piece_in_position([1, 0])).to be_an_instance_of(Queen)
       expect(game.piece_in_position([5, 6])).to be_an_instance_of(Pawn)
       expect(game.piece_in_position([5, 1])).to be_an_instance_of(Pawn)
     end
+  end
+
+  describe "#check_checkmate" do
   end
 end

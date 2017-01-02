@@ -55,7 +55,7 @@ class Piece
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
-        positions[1] << val
+        positions[1] << val unless @game.piece_in_position(val).colour == @colour
         break
       end
 
@@ -68,7 +68,7 @@ class Piece
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
-        positions[1] << val
+        positions[1] << val unless @game.piece_in_position(val).colour == @colour
         break
       end
 
@@ -85,7 +85,7 @@ class Piece
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
-        positions[1] << val
+        positions[1] << val unless @game.piece_in_position(val).colour == @colour
         break
       end
 
@@ -97,7 +97,7 @@ class Piece
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
-        positions[1] << val
+        positions[1] << val unless @game.piece_in_position(val).colour == @colour
         break
       end
 
@@ -114,7 +114,7 @@ class Piece
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
-        positions[1] << val
+        positions[1] << val unless @game.piece_in_position(val).colour == @colour
         break
       end
 
@@ -131,7 +131,7 @@ class Piece
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
-        positions[1] << val
+        positions[1] << val unless @game.piece_in_position(val).colour == @colour
         break
       end
 
@@ -148,7 +148,7 @@ class Piece
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
-        positions[1] << val
+        positions[1] << val unless @game.piece_in_position(val).colour == @colour
         break
       end
 
@@ -166,7 +166,7 @@ class Piece
       break unless val_in_bounds?(val)
 
       unless @game.piece_in_position(val).nil?
-        positions[1] << val
+        positions[1] << val unless @game.piece_in_position(val).colour == @colour
         break
       end
 

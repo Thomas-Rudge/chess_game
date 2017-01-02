@@ -61,7 +61,7 @@ Game class will hold game logic.
 "\e[47m\e[30m" WHITE
 
 Checkmate
-  These must be know..
+  These must be known..
     Whether the King can move away
     Whether the King can be defended
   To accommodate..

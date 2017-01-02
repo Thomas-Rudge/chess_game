@@ -13,7 +13,8 @@ class Pawn < Piece
 
     moves.each do |p|
       if !@game.piece_in_position(p).nil?
-        positions[1] << p unless p[0] == @position[0]
+        positions[1] << p unless p[0] == @position[0] ||
+                                 @game.piece_in_position(p).colour == @colour
       elsif (p[0].between? *@boundary) && (p[1].between? *@boundary)
         positions[0] << p
       end
