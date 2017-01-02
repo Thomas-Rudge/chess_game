@@ -3,6 +3,7 @@ require_relative '../chess'
 
 describe Game do
   let (:game) { Game.new }
+
   describe "#setup" do
     it "will add a white & black king to @game_pieces array" do
       expect(game.game_pieces.count { |p| p.is_a? King }).to eql 2
@@ -40,6 +41,7 @@ describe Game do
     it "will perform castling to the right when nothing is in the way" do
       game.pieces_in_range([4, 0], [7, 0]).each { |p| p.captured = true }
       game.attempt_castling(:r)
+
       expect(game.piece_in_position([6, 0])).to be_instance_of(King)
       expect(game.piece_in_position([5, 0])).to be_instance_of(Rook)
     end
@@ -47,12 +49,14 @@ describe Game do
     it "will perform castlig to the left when nothing is in the way" do
       game.pieces_in_range([0, 0], [4, 0]).each { |p| p.captured = true }
       game.attempt_castling(:l)
+
       expect(game.piece_in_position([2, 0])).to be_instance_of(King)
       expect(game.piece_in_position([3, 0])).to be_instance_of(Rook)
     end
 
     it "will not castle when something is in the way" do
       game.attempt_castling(:l)
+
       expect(game.piece_in_position([2, 0])).to be_instance_of(Bishop)
       expect(game.piece_in_position([3, 0])).to be_instance_of(Queen)
     end
@@ -62,6 +66,7 @@ describe Game do
       game.piece_in_position([4, 0]).position = [3, 0]
       game.piece_in_position([3, 0]).position = [4, 0]
       game.attempt_castling(:l)
+
       expect(game.piece_in_position([2, 0])).to be_nil
       expect(game.piece_in_position([3, 0])).to be_nil
     end
@@ -71,6 +76,7 @@ describe Game do
       game.piece_in_position([7, 0]).position = [6, 0]
       game.piece_in_position([6, 0]).position = [7, 0]
       game.attempt_castling(:r)
+
       expect(game.piece_in_position([6, 0])).to be_nil
       expect(game.piece_in_position([5, 0])).to be_nil
     end
@@ -80,6 +86,7 @@ describe Game do
       game.piece_in_position([2, 1]).captured = true
       game.piece_in_position([7, 7]).position = [2, 2]
       game.attempt_castling(:l)
+
       expect(game.piece_in_position([2, 0])).to be_nil
       expect(game.piece_in_position([3, 0])).to be_nil
     end
@@ -103,8 +110,45 @@ describe Game do
     end
 
     it "return the first piece found" do
-      expect(game.pieces_in_range(*range2)).to include(a_kind_of(Pawn))
-      expect(game.pieces_in_range(*range3)).to include(a_kind_of(Queen))
+      expect(game.pieces_in_range(*range2)).to include(an_instance_of(Pawn))
+      expect(game.pieces_in_range(*range3)).to include(an_instance_of(Queen))
+    end
+  end
+
+  describe "#update_status_of_kings" do
+    it "sets a king's in_check flag to true if he is under attack" do
+      game.game_pieces.each { |p| p.captured = true if p.is_a? Pawn}
+
+      expect(game.piece_in_position([4, 0]).in_check?).to be false
+      expect(game.piece_in_position([4, 7]).in_check?).to be false
+
+      game.piece_in_position([3, 7]).position = [4, 6]
+      game.update_status_of_kings
+
+      expect(game.piece_in_position([4, 0]).in_check?).to be true
+      expect(game.piece_in_position([4, 7]).in_check?).to be false
+    end
+  end
+
+  describe "#pawn_promotion" do
+    it "replace Prawn objects that have reached the end of the board with Queen objects" do
+      game.game_pieces.clear
+      game.game_pieces << Pawn.new(0, [3, 6], [0, 7], game)
+      game.game_pieces << Pawn.new(0, [5, 6], [0, 7], game)
+      game.game_pieces << Pawn.new(1, [1, 1], [0, 7], game)
+      game.game_pieces << Pawn.new(1, [5, 1], [0, 7], game)
+      game.pawn_promotion
+
+      expect(game.game_pieces).not_to include(an_instance_of(Queen))
+
+      game.piece_in_position([3, 6]).position = [3, 7]
+      game.piece_in_position([1, 1]).position = [1, 0]
+      game.pawn_promotion
+
+      expect(game.piece_in_position([3, 7])).to be_an_instance_of(Queen)
+      expect(game.piece_in_position([1, 0])).to be_an_instance_of(Queen)
+      expect(game.piece_in_position([5, 6])).to be_an_instance_of(Pawn)
+      expect(game.piece_in_position([5, 1])).to be_an_instance_of(Pawn)
     end
   end
 end

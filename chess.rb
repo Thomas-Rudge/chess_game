@@ -114,17 +114,9 @@ class Game
     when (!mover.valid_moves.flatten(1).include? to)
       print_message(4, mover.class.to_s)
       response = false
-    # Check whether a pawn is moving diagonally without taking
-    when (target.nil? && (mover.is_a? Pawn) && from[0] != to[0])
-      print_message(6)
-      response = false
     # Check whether a user is trying to take their own colour
     when (!target.nil? && target.colour == @turn)
       print_message(7, target.class.to_s)
-      response = false
-    # Check whether a pawn is taking vertically
-    when (mover.is_a? Pawn) && from[0] == to[0] && !target.nil?
-      print_message(6)
       response = false
     end
 
@@ -139,19 +131,29 @@ class Game
     end
   end
 
-  def get_attackers_of_position(position, attackers = Array.new)
+  def get_attackers_of_position(position, turn, attackers = Array.new)
     @game_pieces.each do |piece|
-      next if piece.colour == @turn
+      next if piece.colour == turn
+      next if piece.captured?
       attackers << piece if piece.valid_moves.flatten(1).include? position
     end
 
     attackers
   end
 
+  def pawn_promotion
+    @game_pieces.select { |p| p.is_a? Pawn }.each do |pawn|
+      if (pawn.colour == 0 && pawn.position[1] == @boundary[1]) ||
+         (pawn.colour == 1 && pawn.position[1] == @boundary[0])
+        pawn.captured = true
+        @game_pieces << Queen.new(pawn.colour, pawn.position, @boundary, self)
+      end
+    end
+  end
+
   def check_checkmate
     # Checks the kings status 0 - Not in check, 1 - Check, 2 - Checkmate
     king = update_status_of_kings.select { |k| k.colour == @turn }[0]
-
   end
 ########### C A S T L I N G ###############################################
   def attempt_castling(corner)
@@ -167,7 +169,7 @@ class Game
     # 5. The king may not pass through a square under attack
     range_between_pieces(rook.position, king.position).each do |position|
       next if position[0] < 2 # For castling to the left
-      return false unless get_attackers_of_position(position).empty?
+      return false unless get_attackers_of_position(position, @turn).empty?
     end
 
     case corner
@@ -238,26 +240,8 @@ class Game
   #### U P D A T E   K I N G   S T A T U S ###########################
   def update_status_of_kings
     # Checks and updates the status of both kings, then returns them
-    kings = get_kings
-
-    kings.each do |k|
-      in_check = false
-      # Will set king in check, if an opponent piece can reach them in next move.
-      @game_pieces.each do |p|
-        next unless p.colour != k.colour
-        next if     p.captured?
-        next unless p.valid_moves[1].include? k.position
-
-        if p.is_a? Knight # can jump
-          in_check = true
-        elsif (p.is_a? Pawn) && p.position[0] == k.position[0]
-          next
-        else # Check there is nothing in the way
-          in_check = true if pieces_in_range(p.position, k.position).empty?
-        end
-      end
-
-      k.in_check = in_check
+    get_kings.each do |k|
+      k.in_check = !get_attackers_of_position(k.position, k.colour).empty?
     end
   end
 
