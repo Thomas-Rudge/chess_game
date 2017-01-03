@@ -1,7 +1,8 @@
+# DELETE Spec not required
+# valid_moves logic tested in piece_spec
+
 require 'spec_helper'
 require_relative '../pieces/bishop'
-
-# valid_moves method tested in piece_spec.rb
 
 describe Bishop do
 end
