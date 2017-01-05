@@ -2,11 +2,12 @@ require_relative '../piece'
 
 class Queen < Piece
   def valid_moves(positions = Array.new)
-    valid1, take1 = *xy_nodes_from_position
-    valid2, take2 = *verticle_nodes_from_position
+    empty1, enemy1, ally1 = *xy_nodes_from_position
+    empty2, enemy2, ally2 = *verticle_nodes_from_position
 
-    positions << valid1 + valid2
-    positions << take1  + take2
+    positions << empty1 + empty2
+    positions << enemy1 + enemy2
+    positions << ally1  + ally2
 
     positions
   end

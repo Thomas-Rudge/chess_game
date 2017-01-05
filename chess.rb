@@ -4,7 +4,7 @@ require_relative 'board'
 class Game
   include Board
 
-  attr_reader :game_pieces, :squares
+  attr_reader :game_pieces, :squares, :turn
   attr_writer :checkmate
 
   def initialize(*args)
@@ -42,6 +42,8 @@ class Game
       check_checkmate
     end
 
+    clear_screen
+    print_board(@game_pieces)
     print_winner(@turn^1)
     ask_replay ? restart : finish
   end
@@ -98,6 +100,8 @@ class Game
       if king.in_check?
         to_move.position = move[0]
         2.times { to_move.history.pop }
+        move_to.captured = false unless move_to.nil?
+        update_status_of_kings
         print_message(8)
         next
       end
@@ -133,13 +137,15 @@ class Game
   end
 
   def get_attackers_of_position(position, turn, attackers = Array.new)
-    @game_pieces.each do |piece|
-      next if piece.colour == turn
-      next if piece.captured?
+    @game_pieces.select { |p| p.colour != turn && !p.captured?  }.each do |piece|
       attackers << piece if piece.valid_moves.flatten(1).include? position
     end
 
     attackers
+  end
+
+  def position_under_attack?(position)
+    !get_attackers_of_position(position, @turn).empty?
   end
 
   def pawn_promotion
@@ -152,51 +158,59 @@ class Game
     end
   end
 
-  def check_checkmate
-    # WHAT IF A PAWN CANT MOVE!!
+  def all_valid_moves
+    # Returns all squares that non-king pieces could be moved to
+    support = @game_pieces.select { |p| p.available? &&
+                                      (!p.is_a? King) }
+
+    support_moves = support.map   { |p| p.valid_moves[0, 1].flatten(1) }.flatten(1)
+  end
+
+  def all_kings_moves(king, nope  = Array.new)
+    # Gets all squares
+    moves = king.valid_moves[0, 1].flatten(1)
+    moves.each { |m| nope << m unless get_attackers_of_position(m, king.colour).empty?}
+
+    moves - nope
+  end
+#### C H E C K M A T E   L O G I C #########################
+  def check_checkmate(king_is_alone = false)
+    # Checks the current players king for checkmate
     king = get_kings.select { |k| k.colour == @turn }[0]
     # If you're not in check, and you have other pieces to move, then continue
     unless king.in_check?
-      if @game_pieces.select { |p| p.colour == @turn && !p.captured? }.length > 1
-        return
-      else
-        moves = king.valid_moves.flatten(1)
-        nope  = Array.new
-        moves.each { |m| nope << m unless get_attackers_of_position(m, @turn).empty?}
-        if (moves - nope).empty?
-          @checkmate = true
-          return
-        end
-      end
+      return unless all_valid_moves.empty?
+      king_is_alone = true
     end
-
+    puts "King #{king.colour} is alone #{king_is_alone}"
+    # Can the king move out of the way
+    return unless all_kings_moves(king).empty?
+    puts "cannot move out of the way"
+    # At this point, if the king is by himself, he's in checkmate
+    if king_is_alone
+      @checkmate = true
+      puts "is in checkmate"
+      return
+    end
+    # If the king is not alone, can the attacker be captured or blocked?
     attackers = get_attackers_of_position(king.position, @turn)
-    puts "#{attackers.length} attackers"
-    # See if the king can move
-    king.valid_moves.flatten(1).each do |square|
-      return if get_attackers_of_position(square, @turn).empty?
-    end
-    puts "#{king.colour} in check"
-    puts "Cannot move out of the way"
-    if attackers.length == 1
+    unless attackers.length > 1
       puts "Only one attacker"
-      attacker = attackers[0]
+      attackers = attackers[0]
       # See if the user can capture the attacker
-      game_pieces.select { |p| p.colour == @turn }.each do |piece|
-        return if piece.valid_moves[1].include? attacker.position
+      @game_pieces.select { |p| p.available? }.each do |piece|
+        return if piece.valid_moves[1].include? attackers.position
       end
       puts "Cannot be captured"
       # See if the user can block the attacker
-      unless (attacker.is_a? Knight) || (attacker.is_a? Pawn)
-        attack_range = range_between_pieces(attacker.position, king.position)
-        game_pieces.select { |p| p.colour == @turn }.each do |piece|
-          moves = piece.valid_moves
+      unless (attackers.is_a? Knight) || (attackers.is_a? Pawn)
+        attack_range = range_between_pieces(attackers.position, king.position)
+        game_pieces.select { |p| p.available? }.each do |piece|
+          moves = piece.valid_moves[0]
           return if attack_range.length > (attack_range - moves).length
         end
       end
       puts "Cannot be blocked"
-      # See if the attacker(s) can be blocked
-
     end
     puts "Checkmate"
     @checkmate = true
@@ -207,7 +221,7 @@ class Game
     # 1. The king and rook involved in castling must not have previously moved;
     # 2. The king and the rook must be on the same rank.
     # 3. The king may not currently be in check.
-    king, rook = get_rook_and_king(corner)
+    king, rook = get_rook_and_king_for_castling(corner)
     return false if rook.nil? || king.nil?
     # 3. There must be no pieces between the king and the rook;
     return false unless pieces_in_range(rook.position, king.position).empty?
@@ -228,19 +242,18 @@ class Game
     end; true
   end
 
-  def get_rook_and_king(corner)
-    # Returns the king and rook that can be used for castling
-    king  = @game_pieces.select { |p| (p.is_a? King) && p.colour == @turn }[0]
-    rooks = @game_pieces.select { |r| (r.is_a? Rook) && r.colour == @turn }
+  def get_rook_and_king_for_castling(corner)
+    corner = {:r=>@boundary[1], :l=>@boundary[0]}[corner]
 
-    if corner == :r
-      rook = rooks.select { |r| r.position[0] == @boundary[1] }[0]
-    else
-      rook = rooks.select { |r| r.position[0] == @boundary[0] }[0]
-    end
+    king  = get_kings.select { |k| (k.is_a? King)    &&
+                                    k.available?     &&
+                                    k.history.empty? &&
+                                   !k.in_check? }[0]
 
-    rook = nil unless (rook.is_a? Rook) && rook.history.empty? && !rook.captured?
-    king = nil unless king.history.empty? && !king.in_check?
+    rook = @game_pieces.select { |r| (r.is_a? Rook)    &&
+                                       r.available?     &&
+                                       r.history.empty? &&
+                                       r.position[0] == corner }[0]
 
     [king, rook]
   end
