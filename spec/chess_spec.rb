@@ -92,11 +92,11 @@ describe Game do
     end
   end
 
-  describe "#range_between_pieces" do
+  describe "#range_between_squares" do
     it "will give all squares between two positions on the board" do
-      expect(game.range_between_pieces([3, 0], [3, 7])).to match_array [[3, 1], [3, 2], [3, 3],
+      expect(game.range_between_squares([3, 0], [3, 7])).to match_array [[3, 1], [3, 2], [3, 3],
                                                                         [3, 4], [3, 5], [3, 6]]
-      expect(game.range_between_pieces([7, 0], [3, 4])).to match_array [[4, 3], [5, 2], [6, 1]]
+      expect(game.range_between_squares([7, 0], [3, 4])).to match_array [[4, 3], [5, 2], [6, 1]]
     end
   end
 

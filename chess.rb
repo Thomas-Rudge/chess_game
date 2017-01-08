@@ -181,7 +181,7 @@ class Game
     all_moves
   end
 
-  def all_kings_moves(king, nope  = Array.new)
+  def all_kings_moves(king, nope = Array.new)
     moves = king.valid_moves[0, 1].flatten(1)
     moves.each { |m| nope << m unless get_attackers_of_position(m, king.colour).empty?}
 
@@ -215,7 +215,7 @@ class Game
         end
         # See if the user can block the attacker
         unless (attacker.is_a? Knight) || (attacker.is_a? Pawn)
-          attack_range = range_between_pieces(attacker.position, king.position)
+          attack_range = range_between_squares(attacker.position, king.position)
 
           game_pieces.select { |p| p.available? }.each do |piece|
             moves = piece.valid_moves[0]
@@ -259,7 +259,7 @@ class Game
     return false unless pieces_in_range(rook.position, king.position).empty?
     # 4. The king cannot move to a square under attack (i.e move into check)
     # 5. The king may not pass through a square under attack
-    range_between_pieces(rook.position, king.position).each do |position|
+    range_between_squares(rook.position, king.position).each do |position|
       next if position[0] < 2 # For castling to the left
       return false unless get_attackers_of_position(position, @turn).empty?
     end
@@ -290,7 +290,7 @@ class Game
     [king, rook]
   end
 
-  def range_between_pieces(a, b)
+  def range_between_squares(a, b)
     # returns the range between a & b. The returned range excludes a and b.
     a, b = *[a, b].sort
     temp_g    = Game.new("empty")
@@ -311,7 +311,7 @@ class Game
 
   def pieces_in_range(a, b, pieces = Array.new)
     # returns the game pieces found in a range, or nil
-    range = range_between_pieces(a, b)
+    range = range_between_squares(a, b)
 
     range.each do |r|
       val = piece_in_position(r)

@@ -79,7 +79,7 @@ module Board
     print "#{PFX}>"
     response = gets.chomp.downcase
 
-    return (["y", "yes", "ok"].include? response) ? true : false
+    ["y", "yes", "ok"].include? response
   end
 
   def print_message(type, *args)

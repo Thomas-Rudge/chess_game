@@ -7,10 +7,11 @@ class Piece
   def initialize(colour, position, boundary, game)
     @colour   = colour
     @position = position
+    @captured = false
     @history  = Array.new
     @boundary = boundary
     @game     = game
-    @captured = false
+
   end
 
   def callout(position)
