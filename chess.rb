@@ -4,7 +4,8 @@ require_relative 'board'
 class Game
   include Board
 
-  attr_reader :game_pieces, :squares, :turn
+  attr_accessor :game_pieces, :turn
+  attr_writer :checkmate, :stalemate
 
   def initialize(*args)
     @game_pieces     = Array.new
@@ -138,7 +139,7 @@ class Game
   end
 
   def get_attackers_of_position(position, turn, attackers = Array.new, direction = {1=>1, 0=>-1})
-    @game_pieces.select { |p| p.colour != turn && !p.captured?  }.each do |piece|
+    @game_pieces.select { |p| p.colour != turn && !p.captured? }.each do |piece|
       if piece.is_a? Pawn
         attackers << piece if (position[0] - piece.position[0] == direction[turn]   &&
                                position[1] - piece.position[1] == direction[turn])  ||
@@ -172,6 +173,7 @@ class Game
 
     ally_pieces.each do |piece|
       piece.valid_moves[0, 1].flatten(1).each do |move|
+        next if move.nil?
         all_moves << move unless does_move_expose_king?(piece, move, king)
       end
     end
@@ -194,7 +196,7 @@ class Game
     when true
       king_is_alone = @game_pieces.count { |p| p.available? } == 0
       # Can the king move out of the way
-      king_can_move = all_kings_moves(king).empty?
+      king_can_move = !all_kings_moves(king).empty?
 
       if king_can_move
         return
@@ -232,13 +234,14 @@ class Game
   def does_move_expose_king?(piece, move, king, result=false)
     captured_piece = piece_in_position(move)
     captured_piece.captured = true unless captured_piece.nil?
-    piece.position = move
+    return_position = piece.position
+    piece.position  = move
 
     update_status_of_kings
 
     result = true if king.in_check?
 
-    piece.position = piece.history[-2]
+    piece.position = return_position
     2.times { piece.history.pop }
     captured_piece.captured = false unless captured_piece.nil?
 

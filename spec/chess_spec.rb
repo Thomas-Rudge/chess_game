@@ -185,4 +185,166 @@ describe Game do
       end
     end
   end
+
+  describe "#check_game_state" do
+    context "neither king is in stalemate or checkmate" do
+      it "will not declare stalemate or checkmate" do
+        game.check_game_state
+        expect(game.stalemate?).to be false
+        expect(game.checkmate?).to be false
+
+        game.turn = 1
+        game.check_game_state
+        expect(game.stalemate?).to be false
+        expect(game.checkmate?).to be false
+      end
+    end
+
+    context "when the king is not in check, but no move is possible" do
+      it "will declare stalemate" do
+        # Burn vs. Pilsbury, 1898
+        game.game_pieces.clear
+        game.game_pieces << King.new(1, [5, 7], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [5, 6], [0, 7], game)
+        game.game_pieces << King.new(0, [5, 5], [0, 7], game)
+        game.turn = 1
+        game.check_game_state
+
+        expect(game.stalemate?).to be true
+        expect(game.checkmate?).to be false
+        # Anand vs. Kramnik, 2007
+        game.game_pieces.clear
+        game.reset_game_history
+        game.game_pieces << King.new(1, [5, 4], [0 ,7], game)
+        game.game_pieces << Pawn.new(1, [5, 5], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [6, 6], [0, 7], game)
+        game.game_pieces << King.new(0, [7, 4], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [7, 3], [0, 7], game)
+        game.check_game_state
+
+        expect(game.stalemate?).to be true
+        expect(game.checkmate?).to be false
+        # Bernstein vs. Smyslov, 1946
+        game.game_pieces.clear
+        game.reset_game_history
+        game.game_pieces << King.new(1, [5, 4], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [5, 3], [0, 7], game)
+        game.game_pieces << Rook.new(1, [1, 1], [0, 7], game)
+        game.game_pieces << King.new(0, [5, 2], [0, 7], game)
+        game.check_game_state
+
+        expect(game.stalemate?).to be true
+        expect(game.checkmate?).to be false
+        # Troitsky vs. Vogt, 1896 (Many pieces on the board)
+        game.game_pieces.clear
+        game.reset_game_history
+        game.game_pieces << King.new(1, [3, 7], [0, 7], game)
+        game.game_pieces << Queen.new(1, [3, 0], [0, 7], game)
+        game.game_pieces << Rook.new(1, [6, 5], [0, 7], game)
+        game.game_pieces << Bishop.new(1, [1, 5], [0, 7], game)
+        game.game_pieces << Bishop.new(1, [7, 2], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [0, 4], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [1, 6], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [2, 6], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [4, 4], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [5, 6], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [6, 6], [0, 7], game)
+        game.game_pieces << King.new(0, [6, 0], [0, 7], game)
+        game.game_pieces << Rook.new(0, [7, 0], [0, 7], game)
+        game.game_pieces << Knight.new(0, [6, 2], [0, 7], game)
+        game.game_pieces << Bishop.new(0, [0, 4], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [0, 3], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [1, 4], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [4, 3], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [7, 1], [0, 7], game)
+        game.check_game_state
+
+        expect(game.stalemate?).to be true
+        expect(game.checkmate?).to be false
+      end
+    end
+
+    context "when the king is in check and cannot get out" do
+      it "will declare checkmate" do
+        # Fool's mate
+        game.piece_in_position([3, 7]).position = [7, 3]
+        game.piece_in_position([4, 6]).position = [4, 4]
+        game.piece_in_position([5, 1]).position = [5, 2]
+        game.piece_in_position([6, 1]).position = [6, 3]
+        game.update_status_of_kings
+        game.check_game_state
+
+        expect(game.stalemate?).to be false
+        expect(game.checkmate?).to be true
+        # D. Byrne vs. Fischer
+        game.game_pieces.clear
+        game.game_pieces << King.new(1, [6, 6], [0, 7], game)
+        game.game_pieces << Rook.new(1, [2, 1], [0, 7], game)
+        game.game_pieces << Knight.new(1, [2, 2], [0, 7], game)
+        game.game_pieces << Bishop.new(1, [1, 2], [0, 7], game)
+        game.game_pieces << Bishop.new(1, [1, 3], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [1, 4], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [2, 5], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [5, 6], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [6, 5], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [7, 4], [0, 7], game)
+        game.game_pieces << King.new(0, [2, 0], [0, 7], game)
+        game.game_pieces << Queen.new(0, [1, 7], [0, 7], game)
+        game.game_pieces << Knight.new(0, [4, 4], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [6, 1], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [7, 3], [0, 7], game)
+        game.update_status_of_kings
+        game.check_game_state
+
+        expect(game.stalemate?).to be false
+        expect(game.checkmate?).to be true
+
+        # Simple with Rook
+        game.game_pieces.clear
+        game.game_pieces << King.new(1, [7, 4], [0, 7], game)
+        game.game_pieces << King.new(0, [5, 5], [0, 7], game)
+        game.game_pieces << Rook.new(0, [7, 0], [0, 7], game)
+        game.turn = 1
+        game.update_status_of_kings
+        game.check_game_state
+
+        expect(game.stalemate?).to be false
+        expect(game.checkmate?).to be true
+      end
+    end
+
+    context "if the king is in check, but can move out of the way" do
+      it "will not declare checkmate" do
+        game.game_pieces.clear
+        game.game_pieces << King.new(1, [0, 7], [0, 7], game)
+        game.game_pieces << King.new(0, [4, 0], [0, 7], game)
+        game.game_pieces << Rook.new(0, [0, 0], [0, 7], game)
+        game.game_pieces << Bishop.new(0, [3, 4], [0, 7], game)
+        game.turn = 1
+        game.update_status_of_kings
+        game.check_game_state
+
+        expect(game.stalemate?).to be false
+        expect(game.checkmate?).to be false
+
+      end
+    end
+
+    context "if the king is in check, but the attacker can be captured" do
+      it "will not declare checkmate" do
+        game.game_pieces.clear
+        game.game_pieces << King.new(1, [4, 7], [0, 7], game)
+        game.game_pieces << Rook.new(1, [7, 4], [0, 7], game)
+        game.game_pieces << King.new(0, [7, 0], [0, 7], game)
+        game.game_pieces << Rook.new(0, [6, 0], [0, 7], game)
+        game.game_pieces << Pawn.new(0, [6, 1], [0, 7], game)
+        game.game_pieces << Rook.new(0, [2, 4], [0, 7], game)
+        game.update_status_of_kings
+        game.check_game_state
+
+        expect(game.stalemate?).to be false
+        expect(game.checkmate?).to be false
+      end
+    end
+  end
 end
