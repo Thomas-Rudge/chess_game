@@ -12,7 +12,7 @@ class Pawn < Piece
     moves << [@position[0],     @position[1] + direction[@colour] * 2] if @history.empty?
 
     moves.each do |move|
-      piece = @game.piece_in_position(p)
+      piece = @game.piece_in_position(move)
       if !piece.nil?
         unless move[0] == @position[0]
           piece.colour == @colour ? positions[2] << move : positions[1] << move

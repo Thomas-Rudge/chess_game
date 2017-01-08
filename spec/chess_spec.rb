@@ -94,9 +94,9 @@ describe Game do
 
   describe "#range_between_pieces" do
     it "will give all squares between two positions on the board" do
-      expect(game.range_between_pieces([3, 0], [3, 7]).sort).to eql [[3, 1], [3, 2], [3, 3],
-                                                                     [3, 4], [3, 5], [3, 6]]
-      expect(game.range_between_pieces([7, 0], [3, 4]).sort).to eql [[4, 3], [5, 2], [6, 1]]
+      expect(game.range_between_pieces([3, 0], [3, 7])).to match_array [[3, 1], [3, 2], [3, 3],
+                                                                        [3, 4], [3, 5], [3, 6]]
+      expect(game.range_between_pieces([7, 0], [3, 4])).to match_array [[4, 3], [5, 2], [6, 1]]
     end
   end
 
@@ -153,6 +153,36 @@ describe Game do
     end
   end
 
-  describe "#check_checkmate" do
+  describe "#get_attackers_of_position" do
+    context "when a pawn is blocked" do
+      it "will still consider the square diagonal to the pawn as under attack" do
+        game.game_pieces.clear
+        game.game_pieces << King.new(0, [5, 0], [0, 7], game)
+        game.game_pieces << Pawn.new(1, [5, 1], [0, 7], game)
+
+        expect(game.get_attackers_of_position([4, 0], 0)).to include(an_instance_of(Pawn))
+      end
+    end
+
+    context "with multiple pieces" do
+      let (:attackers) { game.get_attackers_of_position([2, 5], 0) }
+
+      it "will return all opponent pieces attacking a square" do
+        expect(attackers.count { |p| p.is_a? Knight} ).to eql 1
+        expect(attackers.count { |p| p.is_a? Pawn}   ).to eql 2
+      end
+    end
+  end
+
+  describe "#all_kings_moves" do
+    context "when an adjacent square is under attack" do
+      it "will not be included as a move" do
+        game.game_pieces.clear
+        game.game_pieces << King.new(0, [3, 5], [0, 7], game)
+        game.game_pieces << Bishop.new(1, [1, 2], [0, 7], game)
+
+        expect(game.all_kings_moves(game.piece_in_position([3, 5]))).not_to include([3, 4], [4, 5])
+      end
+    end
   end
 end

@@ -5,13 +5,13 @@ class Game
   include Board
 
   attr_reader :game_pieces, :squares, :turn
-  attr_writer :checkmate
 
   def initialize(*args)
     @game_pieces     = Array.new
     @boundary        = [0, 7]
     @turn            = 0 # corresponds with Piece @colour
     @checkmate       = false
+    @stalemate       = false
 
     setup unless args.include? "empty"
   end
@@ -34,17 +34,17 @@ class Game
   end
 
   def start
-    until checkmate?
+    until checkmate? || stalemate?
       clear_screen
       print_board(@game_pieces)
       take_turns
       pawn_promotion
-      check_checkmate
+      check_game_state
     end
 
     clear_screen
     print_board(@game_pieces)
-    print_winner(@turn^1)
+    checkmate? ? print_message(10, @turn^1) : print_message(11)
     ask_replay ? restart : finish
   end
 
@@ -60,10 +60,11 @@ class Game
   def reset_game_history
     @game_pieces.each { |p| p.clear_history }
     @turn = 0
+    @checkmate = false
+    @stalemate = false
   end
 
   def take_turns
-    # Goes through the logic of each turn. It's a bit of a long method :/
     loop do
       # Get a response from the player
       move = request_move(@turn, @boundary)
@@ -98,8 +99,8 @@ class Game
       # Get the players king and make sure he wasn't put in check
       king = update_status_of_kings.select { |k| k.colour == @turn }[0]
       if king.in_check?
-        to_move.position = move[0]
         2.times { to_move.history.pop }
+        to_move.position = move[0]
         move_to.captured = false unless move_to.nil?
         update_status_of_kings
         print_message(8)
@@ -136,9 +137,16 @@ class Game
     end
   end
 
-  def get_attackers_of_position(position, turn, attackers = Array.new)
+  def get_attackers_of_position(position, turn, attackers = Array.new, direction = {1=>1, 0=>-1})
     @game_pieces.select { |p| p.colour != turn && !p.captured?  }.each do |piece|
-      attackers << piece if piece.valid_moves.flatten(1).include? position
+      if piece.is_a? Pawn
+        attackers << piece if (position[0] - piece.position[0] == direction[turn]   &&
+                               position[1] - piece.position[1] == direction[turn])  ||
+                              (position[0] - piece.position[0] == direction[turn^1] &&
+                               position[1] - piece.position[1] == direction[turn])
+      else
+        attackers << piece if piece.valid_moves.flatten(1).include? position
+      end
     end
 
     attackers
@@ -158,62 +166,83 @@ class Game
     end
   end
 
-  def all_valid_moves
-    # Returns all squares that non-king pieces could be moved to
-    support = @game_pieces.select { |p| p.available? &&
-                                      (!p.is_a? King) }
+  def all_valid_moves(king, all_moves = Array.new)
+    # Returns all squares that non-king pieces could be moved to without exposing the king
+    ally_pieces = @game_pieces.select { |p| p.available? }
 
-    support_moves = support.map   { |p| p.valid_moves[0, 1].flatten(1) }.flatten(1)
+    ally_pieces.each do |piece|
+      piece.valid_moves[0, 1].flatten(1).each do |move|
+        all_moves << move unless does_move_expose_king?(piece, move, king)
+      end
+    end
+
+    all_moves
   end
 
   def all_kings_moves(king, nope  = Array.new)
-    # Gets all squares
     moves = king.valid_moves[0, 1].flatten(1)
     moves.each { |m| nope << m unless get_attackers_of_position(m, king.colour).empty?}
 
     moves - nope
   end
+
 #### C H E C K M A T E   L O G I C #########################
-  def check_checkmate(king_is_alone = false)
-    # Checks the current players king for checkmate
+  def check_game_state
     king = get_kings.select { |k| k.colour == @turn }[0]
-    # If you're not in check, and you have other pieces to move, then continue
-    unless king.in_check?
-      return unless all_valid_moves.empty?
-      king_is_alone = true
-    end
-    puts "King #{king.colour} is alone #{king_is_alone}"
-    # Can the king move out of the way
-    return unless all_kings_moves(king).empty?
-    puts "cannot move out of the way"
-    # At this point, if the king is by himself, he's in checkmate
-    if king_is_alone
-      @checkmate = true
-      puts "is in checkmate"
-      return
-    end
-    # If the king is not alone, can the attacker be captured or blocked?
-    attackers = get_attackers_of_position(king.position, @turn)
-    unless attackers.length > 1
-      puts "Only one attacker"
-      attackers = attackers[0]
-      # See if the user can capture the attacker
-      @game_pieces.select { |p| p.available? }.each do |piece|
-        return if piece.valid_moves[1].include? attackers.position
+
+    case king.in_check?
+    when true
+      king_is_alone = @game_pieces.count { |p| p.available? } == 0
+      # Can the king move out of the way
+      king_can_move = all_kings_moves(king).empty?
+
+      if king_can_move
+        return
+      elsif king_is_alone
+        @checkmate = true
+        return
       end
-      puts "Cannot be captured"
-      # See if the user can block the attacker
-      unless (attackers.is_a? Knight) || (attackers.is_a? Pawn)
-        attack_range = range_between_pieces(attackers.position, king.position)
-        game_pieces.select { |p| p.available? }.each do |piece|
-          moves = piece.valid_moves[0]
-          return if attack_range.length > (attack_range - moves).length
+
+      attacker = get_attackers_of_position(king.position, @turn)
+
+      unless attacker.length > 1
+        attacker = attacker[0]
+        # See if the user can capture the attacker
+        @game_pieces.select { |p| p.available? }.each do |piece|
+          return if piece.valid_moves[1].include? attacker.position
+        end
+        # See if the user can block the attacker
+        unless (attacker.is_a? Knight) || (attacker.is_a? Pawn)
+          attack_range = range_between_pieces(attacker.position, king.position)
+
+          game_pieces.select { |p| p.available? }.each do |piece|
+            moves = piece.valid_moves[0]
+            return if attack_range.length > (attack_range - moves).length
+          end
         end
       end
-      puts "Cannot be blocked"
+
+      @checkmate = true
+
+    when false
+      @stalemate = true if all_kings_moves(king).empty? && all_valid_moves(king).empty?
     end
-    puts "Checkmate"
-    @checkmate = true
+  end
+
+  def does_move_expose_king?(piece, move, king, result=false)
+    captured_piece = piece_in_position(move)
+    captured_piece.captured = true unless captured_piece.nil?
+    piece.position = move
+
+    update_status_of_kings
+
+    result = true if king.in_check?
+
+    piece.position = piece.history[-2]
+    2.times { piece.history.pop }
+    captured_piece.captured = false unless captured_piece.nil?
+
+    result
   end
 ########### C A S T L I N G ###############################################
   def attempt_castling(corner)
@@ -245,15 +274,15 @@ class Game
   def get_rook_and_king_for_castling(corner)
     corner = {:r=>@boundary[1], :l=>@boundary[0]}[corner]
 
-    king  = get_kings.select { |k| (k.is_a? King)    &&
-                                    k.available?     &&
-                                    k.history.empty? &&
+    king  = get_kings.select { |k| (k.is_a? King)     &&
+                                    k.colour == @turn &&
+                                    k.history.empty?  &&
                                    !k.in_check? }[0]
 
     rook = @game_pieces.select { |r| (r.is_a? Rook)    &&
-                                       r.available?     &&
-                                       r.history.empty? &&
-                                       r.position[0] == corner }[0]
+                                      r.available?     &&
+                                      r.history.empty? &&
+                                      r.position[0] == corner }[0]
 
     [king, rook]
   end
@@ -313,4 +342,5 @@ class Game
   end
   ###### G E T T E R S #####################
   def checkmate?; @checkmate end
+  def stalemate?; @stalemate end
 end

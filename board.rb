@@ -54,10 +54,6 @@ module Board
     hash
   end
 
-  def print_winner(player)
-    puts "#{PFX}Checkmate! #{PLAYERS[player]} wins!"
-  end
-
   def request_move(player, boundary, response=nil)
     puts "#{PFX}Enter move for #{PLAYERS[player]}."
     print "#{PFX}>"
@@ -98,7 +94,8 @@ module Board
     when 7  then puts "You cannot take your own #{args[0]}."
     when 8  then puts "You cannot place your King in check."
     when 9  then puts "The #{PLAYERS[args[0]]} King is in check!"
-    when 10 then puts "Checkmate! Player #{PLAYERS[args[0]^1]} wins!"
+    when 10 then puts "Checkmate! Player #{PLAYERS[args[0]]} wins!"
+    when 11 then puts "Stalemate! It's a draw.'"
     else        puts "Unknown message type: #{type}"
     end
   end
