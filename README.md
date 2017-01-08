@@ -45,7 +45,7 @@ You can see what pieces are on the board, and add new ones, by using the `game_p
 #    > position: [x, y]
 #    > boundary: [x.max, y.max]  *usually [0, 7] for an 8x8 board.
 #    > The game it belongs to.
-chess.game_pieces << Knigh.new(0, [4, 5], [0, 7], chess)
+chess.game_pieces << Knight.new(0, [4, 5], [0, 7], chess)
 
 # Get all pieces that haven't been used yet
 chess.game_pieces.select { |p| p.history.empty? }
@@ -57,9 +57,8 @@ chess.game_pieces.select { |p| p.captured? }
 chess.game_pieces.clear
 ```
 There are various other methods to get pieces and check the state of current gameplay.
-When referring to the opponent, it is the player not currently taking a turn.
 ```ruby
-# Found out whether the opponent is capable of attacking a square
+# Find out whether the opponent is capable of attacking a square
 chess.position_under_attack?([6, 2])
  => false
 
@@ -71,7 +70,7 @@ chess.get_attackers_of_position([3, 6], 1)
 chess.all_valid_moves
  => [[2, 2], [3, 6], [8, 1]]
 
-# Get a list of all squares the king can move to.
+# Get a list of all squares the king can move to (without getting into check).
 chess.all_kings_moves
  => [[4, 1], [5, 0]]
 
@@ -89,7 +88,9 @@ pieces = chess.pieces_in_range([3, 1], [6, 5])
 # Get both kings
 kings = chess.get_kings
 
-# Check whether a move will expose a king to check
+# Check whether a move will expose a king to check, the first argument is the piece object
+# being moves, the second argument is the square being moved to, and the third argument
+# is the King object that you want to check for exposure.
 chess.does_move_expose_king?(knight, [3, 3], king)
  => true
 
