@@ -4,34 +4,49 @@ require_relative 'board'
 class Game
   include Board
 
-  attr_accessor :game_pieces, :turn
+  attr_accessor :game_pieces, :turn, :available_pieces
   attr_writer :checkmate, :stalemate
 
   def initialize(*args)
-    @game_pieces     = Array.new
-    @boundary        = [0, 7]
-    @turn            = 0 # corresponds with Piece @colour
-    @checkmate       = false
-    @stalemate       = false
+    @game_pieces      = Array.new
+    @boundary         = [0, 7]
+    @turn             = 0 # corresponds with Piece @colour
+    @checkmate        = false
+    @stalemate        = false
+    @available_pieces = Array.new
 
     setup unless args.include? "empty"
+
+
+    update_available_pieces
+
+    game = self
+    @game_pieces.define_singleton_method(:<<) do |val|
+      self.push(val)
+      game.update_available_pieces
+      self[-1]
+    end
   end
 
   def setup
     @game_pieces.clear
 
     [0, 1].each do |colour| # 0 - White, 1 - Black
-      @game_pieces << Rook.new(  colour, [0, @boundary[colour]], @boundary, self)
-      @game_pieces << Knight.new(colour, [1, @boundary[colour]], @boundary, self)
-      @game_pieces << Bishop.new(colour, [2, @boundary[colour]], @boundary, self)
-      @game_pieces << Queen.new( colour, [3, @boundary[colour]], @boundary, self)
-      @game_pieces << King.new(  colour, [4, @boundary[colour]], @boundary, self)
-      @game_pieces << Bishop.new(colour, [5, @boundary[colour]], @boundary, self)
-      @game_pieces << Knight.new(colour, [6, @boundary[colour]], @boundary, self)
-      @game_pieces << Rook.new(  colour, [7, @boundary[colour]], @boundary, self)
+      @game_pieces.push(
+        Rook.new(  colour, [0, @boundary[colour]], @boundary, self),
+        Knight.new(colour, [1, @boundary[colour]], @boundary, self),
+        Bishop.new(colour, [2, @boundary[colour]], @boundary, self),
+        Queen.new( colour, [3, @boundary[colour]], @boundary, self),
+        King.new(  colour, [4, @boundary[colour]], @boundary, self),
+        Bishop.new(colour, [5, @boundary[colour]], @boundary, self),
+        Knight.new(colour, [6, @boundary[colour]], @boundary, self),
+        Rook.new(  colour, [7, @boundary[colour]], @boundary, self)
+      )
       # Add the pawns
-      8.times { |i| @game_pieces << Pawn.new(colour, [i, (@boundary[colour]-1).abs], @boundary, self) }
-    end ; nil
+      8.times { |i| @game_pieces.push Pawn.new(colour, [i, (@boundary[colour]-1).abs], @boundary, self) }
+    end
+
+    update_available_pieces
   end
 
   def start
@@ -167,9 +182,8 @@ class Game
   def all_valid_moves(king)
     # Returns all squares that non-king pieces could be moved to without exposing the king
     all_moves   = Array.new
-    ally_pieces = @game_pieces.select { |p| p.available? }
 
-    ally_pieces.each do |piece|
+    @available_pieces.each do |piece|
       piece.valid_moves[0, 2].flatten(1).each do |move|
         all_moves << move unless does_move_expose_king?(piece, move, king)
       end
@@ -191,7 +205,7 @@ class Game
 
     case king.in_check?
     when true
-      king_is_alone = @game_pieces.count { |p| p.available? } == 0
+      king_is_alone = @available_pieces.length == 0
       king_can_move = !all_kings_moves(king).empty?
 
       if king_can_move
@@ -205,8 +219,7 @@ class Game
 
       unless attacker.length > 1
         attacker = attacker[0]
-        return if attacker_can_be_captured?(attacker)
-        return if attacker_can_be_blocked?(attacker, king.position)
+        return if attacker_can_be_captured_or_blocked?(attacker, king.position)
       end
 
       @checkmate = true
@@ -216,19 +229,13 @@ class Game
     end
   end
 
-  def attacker_can_be_captured?(attacker)
-    @game_pieces.select { |p| p.available? }.each do |piece|
-      return true if piece.valid_moves[1].include? attacker.position
-    end ; false
-  end
-
-  def attacker_can_be_blocked?(attacker, kings_position)
-    return false if (attacker.is_a? Knight) || (attacker.is_a? Pawn)
+  def attacker_can_be_captured_or_blocked?(attacker, kings_position)
     attack_range = range_between_squares(attacker.position, kings_position)
 
-    @game_pieces.select { |p| p.available? }.each do |piece|
-      moves = piece.valid_moves[0]
-      return true if attack_range.length > (attack_range - moves).length
+    @available_pieces.each do |piece|
+      moves = piece.valid_moves
+      return true if moves[1].include? attacker.position
+      return true if attack_range.length > (attack_range - moves[0]).length
     end ; false
   end
 
@@ -248,6 +255,10 @@ class Game
     update_status_of_kings
 
     result
+  end
+
+  def update_available_pieces
+    @available_pieces = @game_pieces.select { |p| p.available? } ; nil
   end
 ########### C A S T L I N G ###############################################
   def attempt_castling(corner)
@@ -360,8 +371,7 @@ class Game
 
     unless response.nil?
       response = response.string.split(" ")
-      response.map! { |x| x.split(",") }
-      response.each { |x| x[0] = x[0].to_i ; x[1] = x[1].to_i }
+      response.map! { |r| r.split(",").tap{ |x| x[0] = x[0].to_i ; x[1] = x[1].to_i } }
     end
 
     response
@@ -374,7 +384,12 @@ class Game
       return false unless (r[0].between? *@boundary) && (r[1].between? *@boundary)
     end ; true
   end
-  ###### G E T T E R S #####################
+  ###### S E T T E R S   &    G E T T E R S #####################
   def checkmate?; @checkmate end
   def stalemate?; @stalemate end
+
+  def turn=(value)
+    @turn = value
+    update_available_pieces
+  end
 end

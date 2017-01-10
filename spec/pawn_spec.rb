@@ -3,8 +3,8 @@ require_relative '../pieces/pawn'
 
 describe Pawn do
   let (:game)  { Game.new("empty") }
-  let (:wpawn) { (game.game_pieces << Pawn.new(0, [3, 3], [0, 7], game))[-1] }
-  let (:bpawn) { (game.game_pieces << Pawn.new(1, [6, 3], [0, 7], game))[-1] }
+  let (:wpawn) { game.game_pieces << Pawn.new(0, [3, 3], [0, 7], game) }
+  let (:bpawn) { game.game_pieces << Pawn.new(1, [6, 3], [0, 7], game) }
   describe "#valid_moves" do
     context "with no blocking pieces" do
       it "will only return the square in front of the pawn" do
