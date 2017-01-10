@@ -14,11 +14,9 @@ class King < Piece
       val = [@position[0]+m[0], @position[1]+m[1]]
 
       piece = @game.piece_in_position(val)
-      if !piece.nil? && val != @position
+      if piece && val != @position
         piece.colour == @colour ? positions[2] << val : positions[1] << val
-      elsif (val[0].between? *@boundary) &&
-            (val[1].between? *@boundary) &&
-             val != @position
+      elsif (val_in_bounds? val) && val != @position
         positions[0] << val
       end
     end

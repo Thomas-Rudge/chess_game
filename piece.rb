@@ -11,7 +11,6 @@ class Piece
     @history  = Array.new
     @boundary = boundary
     @game     = game
-
   end
 
   def callout(position)
@@ -19,17 +18,14 @@ class Piece
   end
 
   def available?
-    @colour == @game.turn && !captured?
+    captured? ? false : @colour == @game.turn
   end
 
   def reset
     @position = @history[0] unless @history.empty?
   end
 
-  def clear_history
-    @history.clear
-    @history << @positions
-  end
+  def clear_history!; @history.clear end
 ###### G E T T I N G   N O D E S #####################
   def xy_nodes_from_position(positions = Array.new)
     empty1, enemy1, ally1 = *x_axes
@@ -56,70 +52,44 @@ class Piece
   end
 
   def y_axes(positions = [[], [], []])
-    # From position go up until you hit something
-    loop.with_index(1) do |_, i|
-      val = [@position[0], @position[1] + i]
-      break unless val_in_bounds?(val)
+    [:+, :-].each do |operator|
+      loop.with_index(1) do |_, i|
+        val = [@position[0], @position[1].method(operator).call(i)]
+        break unless val_in_bounds?(val)
 
-      piece = @game.piece_in_position(val)
-      unless piece.nil?
-        piece.colour == @colour ? positions[2] << val : positions[1] << val
-        break
+        piece = @game.piece_in_position(val)
+        unless piece.nil?
+          piece.colour == @colour ? positions[2] << val : positions[1] << val
+          break
+        end
+
+        positions[0] << val
       end
-
-      positions[0] << val
-    end
-    # From position go down until you hit something
-    loop.with_index(1) do |_, i|
-      val = [@position[0], @position[1] - i]
-
-      break unless val_in_bounds?(val)
-
-      piece = @game.piece_in_position(val)
-      unless piece.nil?
-        piece.colour == @colour ? positions[2] << val : positions[1] << val
-        break
-      end
-
-      positions[0] << val
     end
 
     positions
   end
 
   def x_axes(positions = [[], [], []])
-    # From position go right until you hit something
-    loop.with_index(1) do |_, i|
-      val = [@position[0] + i, @position[1]]
-      break unless val_in_bounds?(val)
+    [:+, :-].each do |operator|
+      loop.with_index(1) do |_, i|
+        val = [@position[0].method(operator).call(i), @position[1]]
+        break unless val_in_bounds?(val)
 
-      piece = @game.piece_in_position(val)
-      unless piece.nil?
-        piece.colour == @colour ? positions[2] << val : positions[1] << val
-        break
+        piece = @game.piece_in_position(val)
+        unless piece.nil?
+          piece.colour == @colour ? positions[2] << val : positions[1] << val
+          break
+        end
+
+        positions[0] << val
       end
-
-      positions[0] << val
-    end
-    # From position go left until you hit something
-    loop.with_index(1) do |_, i|
-      val = [@position[0] - i, @position[1]]
-      break unless val_in_bounds?(val)
-
-      piece = @game.piece_in_position(val)
-      unless piece.nil?
-        piece.colour == @colour ? positions[2] << val : positions[1] << val
-        break
-      end
-
-      positions[0] << val
     end
 
     positions
   end
 
   def upper_right_verticles(positions = [[], [], []])
-    # Add upper right verticles
     loop.with_index(1) do |_, i|
       val = [@position[0] + i, @position[1] + i]
       break unless val_in_bounds?(val)
@@ -137,7 +107,6 @@ class Piece
   end
 
   def lower_left_verticles(positions = [[], [], []])
-    # Add lower left verticles
     loop.with_index(1) do |_, i|
       val = [@position[0] - i, @position[1] - i]
       break unless val_in_bounds?(val)
@@ -155,7 +124,6 @@ class Piece
   end
 
   def upper_left_verticles(positions = [[], [], []])
-    # Add upper left verticles
     loop.with_index(1) do |_, i|
       val = [@position[0] - i, @position[1] + i]
       break unless val_in_bounds?(val)
@@ -173,7 +141,6 @@ class Piece
   end
 
   def lower_right_verticles(positions = [[], [], []])
-    # Add lower right verticles
     loop.with_index(1) do |_, i|
       val = [@position[0] + i, @position[1] - i]
 
@@ -191,10 +158,7 @@ class Piece
   end
 
   def val_in_bounds?(val)
-    [
-      !(val[0].between? *@boundary),             # Broken lower boundary?
-      !(val[1].between? *@boundary),             # Broken upper boundary?
-    ].none?
+    (val[0].between? *@boundary) && (val[1].between? *@boundary)
   end
 ##### S E T T E R S  n  G E T T E R S ########################
   def captured?; @captured end

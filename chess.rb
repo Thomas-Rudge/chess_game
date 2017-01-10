@@ -46,7 +46,7 @@ class Game
     clear_screen
     print_board(@game_pieces)
     checkmate? ? print_message(10, @turn^1) : print_message(11)
-    ask_replay ? restart : finish
+    replay? ? restart : finish
   end
 
   def restart

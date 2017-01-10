@@ -29,9 +29,9 @@ module Board
     7.downto(0) do |y|
       print "#{PFX} #{sign[0].pop}  #{y} "
       0.upto(7) do |x|
-        p = pieces[[x, y]]
-        p = p.nil? ? " " : UTFC[p.colour][p.class.to_s]
-        print "#{UTFC[x.even? == y.even?]} #{p} \033[0m"
+        piece = pieces[[x, y]]
+        piece = piece.nil? ? " " : UTFC[piece.colour][piece.class.to_s]
+        print "#{UTFC[x.even? == y.even?]} #{piece} \033[0m"
       end
       print "  #{sign[1].pop}\n#{PFX}      "
 
@@ -48,16 +48,16 @@ module Board
     # Creates a hash where the key is the board position,
     # and the value is the game piece at that position.
     [*(0..7)].product([*(0..7)]).each do |square|
-      pieces.each { |p| hash[square] = p if p.position == square && !p.captured? }
+      pieces.select { |p| !p.captured }.each { |p| hash[square] = p if p.position == square }
     end
 
     hash
   end
 
   def request_move(player, boundary, response=nil)
-    puts "#{PFX}Enter move for #{PLAYERS[player]}."
+    puts  "#{PFX}Enter move for #{PLAYERS[player]}."
     print "#{PFX}>"
-    response = gets.chomp.gsub(/[\[\]]/,"").downcase
+    response = gets.chomp.gsub(/[\[\]]/, "").downcase
   end
 
   def check_response(response, boundary)
@@ -74,7 +74,7 @@ module Board
     [response, valid]
   end
 
-  def ask_replay
+  def replay?
     puts  "#{PFX}Would you like to play again?"
     print "#{PFX}>"
     response = gets.chomp.downcase
@@ -96,7 +96,7 @@ module Board
     when 9  then puts "The #{PLAYERS[args[0]]} King is in check!"
     when 10 then puts "Checkmate! Player #{PLAYERS[args[0]]} wins!"
     when 11 then puts "Stalemate! It's a draw.'"
-    else        puts "Unknown message type: #{type}"
+    else         puts "Unknown message type: #{type}"
     end
   end
 
