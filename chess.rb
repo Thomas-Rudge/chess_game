@@ -120,6 +120,10 @@ class Game
 
     @turn ^= 1
   end
+
+  def update_available_pieces
+    @available_pieces = @game_pieces.select { |p| p.available? } ; nil
+  end
 ########### M O V E   L O G I C ################################
   def make_move(mover, target, move)
     target.captured = true unless target.nil?
@@ -253,16 +257,11 @@ class Game
 
     result
   end
-
-  def update_available_pieces
-    @available_pieces = @game_pieces.select { |p| p.available? } ; nil
-  end
 ########### C A S T L I N G ###############################################
   def attempt_castling(corner)
     # Performs castling move with a rook and king. corner either :r or :l
     # 1. The king and rook involved in castling must not have previously moved;
-    # 2. The king and the rook must be on the same rank.
-    # 3. The king may not currently be in check.
+    # 2. The king may not currently be in check.
     # 3. There must be no pieces between the king and the rook;
     # 4. The king cannot move to a square under attack (i.e move into check)
     # 5. The king may not pass through a square under attack
@@ -310,7 +309,6 @@ class Game
   end
 
   def range_between_squares(a, b)
-    # returns the range between a & b. The returned range excludes a and b.
     a, b = *[a, b].sort
     temp_g    = Game.new("empty")
     temp_a    = Piece.new(0, a, @boundary, temp_g)
@@ -329,7 +327,6 @@ class Game
   end
 
   def pieces_in_range(a, b, pieces = Array.new)
-    # returns the game pieces found in a range, or nil
     range = range_between_squares(a, b)
 
     range.each do |r|
@@ -341,7 +338,6 @@ class Game
   end
 
   def piece_in_position(position)
-    # returns any game pieces found in position, or nil
     @game_pieces.each do |p|
       val = p.callout(position)
       return val unless val.nil? || val.captured?
@@ -349,7 +345,6 @@ class Game
   end
   #### U P D A T E   K I N G   S T A T U S ###########################
   def update_status_of_kings
-    # Checks and updates the status of both kings, then returns them
     get_kings.each do |k|
       k.in_check = !get_attackers_of_position(k.position, k.colour).empty?
     end
@@ -362,7 +357,7 @@ class Game
   def finish
     exit
   end
-  ###### R E S P O N S E #########
+  ###### I N P U T    V A L I D A T I O N #########
   def format_response(response)
     response = response.match /\d,\d \d,\d/
 
