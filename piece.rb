@@ -21,6 +21,10 @@ class Piece
     captured? ? false : @colour == @game.turn
   end
 
+  def takable?
+    captured? ? false : !(@colour == @game.turn)
+  end
+
   def reset
     @position = @history[0] unless @history.empty?
   end

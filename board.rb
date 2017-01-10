@@ -48,7 +48,7 @@ module Board
     # Creates a hash where the key is the board position,
     # and the value is the game piece at that position.
     [*(0..7)].product([*(0..7)]).each do |square|
-      pieces.select { |p| !p.captured }.each { |p| hash[square] = p if p.position == square }
+      pieces.select { |p| !p.captured? }.each { |p| hash[square] = p if p.position == square }
     end
 
     hash
@@ -58,20 +58,6 @@ module Board
     puts  "#{PFX}Enter move for #{PLAYERS[player]}."
     print "#{PFX}>"
     response = gets.chomp.gsub(/[\[\]]/, "").downcase
-  end
-
-  def check_response(response, boundary)
-    response = response.split(" ")
-    response.map! { |x| x.split(",") }
-    response.each { |x| x[0] = x[0].to_i ; x[1] = x[1].to_i }
-
-    valid = response.length == 2
-    response.each do |r|
-      valid = false unless r.length == 2
-      valid = false unless r.select { |x| x.between? *boundary }.length == 2
-    end
-
-    [response, valid]
   end
 
   def replay?

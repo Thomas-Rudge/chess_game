@@ -31,7 +31,7 @@ class Game
       @game_pieces << Rook.new(  colour, [7, @boundary[colour]], @boundary, self)
       # Add the pawns
       8.times { |i| @game_pieces << Pawn.new(colour, [i, (@boundary[colour]-1).abs], @boundary, self) }
-    end
+    end ; nil
   end
 
   def start
@@ -40,7 +40,8 @@ class Game
       print_board(@game_pieces)
       take_turns
       pawn_promotion
-      check_game_state
+      update_status_of_kings
+      update_game_state
     end
 
     clear_screen
@@ -67,11 +68,10 @@ class Game
 
   def take_turns
     loop do
-      # Get a response from the player
       move = request_move(@turn, @boundary)
       finish if ["q", "quit", "exit"].include? move
-      # Check if castling
-      if ["cl", "cr"].include? move
+
+      if ["cl", "cr"].include? move # Check if castling
         castled = attempt_castling(move[1].to_sym)
         unless castled
           print_message(0)
@@ -79,34 +79,29 @@ class Game
         end
         break
       end
-      # If the response isn't in a valid format "1,2 3,4", then reject it.
-      move = check_response(move, @boundary)
-      if move[1] == false
+
+      move = format_response(move)
+      unless user_response_valid? move
         print_message(1)
         next
-      else
-        move = move[0]
       end
-      # Check that there is a piece in the first position,
-      # and that the player is permitted to move it.
-      to_move = piece_in_position(move[0])
-      move_to = piece_in_position(move[1])
 
-      next unless piece_movable?(to_move, move[0])
-      next unless move_valid?(to_move, move_to, move[0], move[1])
-      # Move and capture as required
-      move_to.captured = true unless move_to.nil?
-      to_move.position = move[1]
-      # Get the players king and make sure he wasn't put in check
-      king = update_status_of_kings.select { |k| k.colour == @turn }[0]
-      if king.in_check?
-        2.times { to_move.history.pop }
-        to_move.position = move[0]
-        move_to.captured = false unless move_to.nil?
-        update_status_of_kings
+      move_from = piece_in_position(move[0])
+      move_to   = piece_in_position(move[1])
+      next unless piece_movable?(move_from, move)
+
+      if move_to && !move_to.takable?
+        print_message(7, target.class.to_s)
+        next
+      end
+
+      king = get_kings.select { |k| k.colour == @turn }[0]
+      if does_move_expose_king?(move_from, move[1], king)
         print_message(8)
         next
       end
+
+      make_move(move_from, move_to, move)
 
       break
     end
@@ -114,31 +109,33 @@ class Game
     @turn ^= 1
   end
 ########### M O V E   L O G I C ################################
-  def move_valid?(mover, target, from, to)
-    response = true
-    case
-    # Check that the target square is a valid move for the piece
-    when (!mover.valid_moves.flatten(1).include? to)
-      print_message(4, mover.class.to_s)
-      response = false
-    # Check whether a user is trying to take their own colour
-    when (!target.nil? && target.colour == @turn)
-      print_message(7, target.class.to_s)
-      response = false
-    end
+  def make_move(mover, target, move)
+    target.captured = true unless target.nil?
+    mover.position  = move[1]
+  end
 
-    response
+  def move_valid?(mover, new_position)
+    mover.valid_moves.flatten(1).include? new_position
   end
 
   def piece_movable?(piece, move)
     case
-    when piece.nil?            then print_message(2, move) ; false
-    when piece.colour != @turn then print_message(3)       ; false
-    else                                                     true
+    when piece.nil?
+      print_message(2, move[0])
+    when piece.colour != @turn
+      print_message(3)
+    when !(piece.valid_moves[0, 2].flatten(1).include? move[1])
+      print_message(4, piece.class.to_s)
+    else
+      return true
     end
+
+    return false
   end
 
-  def get_attackers_of_position(position, turn, attackers = Array.new, direction = {1=>1, 0=>-1})
+  def get_attackers_of_position(position, turn, attackers = Array.new)
+    direction = {1=>1, 0=>-1}
+
     @game_pieces.select { |p| p.colour != turn && !p.captured? }.each do |piece|
       if piece.is_a? Pawn
         attackers << piece if (position[0] - piece.position[0] == direction[turn]   &&
@@ -167,13 +164,13 @@ class Game
     end
   end
 
-  def all_valid_moves(king, all_moves = Array.new)
+  def all_valid_moves(king)
     # Returns all squares that non-king pieces could be moved to without exposing the king
+    all_moves   = Array.new
     ally_pieces = @game_pieces.select { |p| p.available? }
 
     ally_pieces.each do |piece|
-      piece.valid_moves[0, 1].flatten(1).each do |move|
-        next if move.nil?
+      piece.valid_moves[0, 2].flatten(1).each do |move|
         all_moves << move unless does_move_expose_king?(piece, move, king)
       end
     end
@@ -182,20 +179,19 @@ class Game
   end
 
   def all_kings_moves(king, nope = Array.new)
-    moves = king.valid_moves[0, 1].flatten(1)
+    moves = king.valid_moves[0, 2].flatten(1)
     moves.each { |m| nope << m unless get_attackers_of_position(m, king.colour).empty?}
 
     moves - nope
   end
 
 #### C H E C K M A T E   L O G I C #########################
-  def check_game_state
+  def update_game_state
     king = get_kings.select { |k| k.colour == @turn }[0]
 
     case king.in_check?
     when true
       king_is_alone = @game_pieces.count { |p| p.available? } == 0
-      # Can the king move out of the way
       king_can_move = !all_kings_moves(king).empty?
 
       if king_can_move
@@ -209,19 +205,8 @@ class Game
 
       unless attacker.length > 1
         attacker = attacker[0]
-        # See if the user can capture the attacker
-        @game_pieces.select { |p| p.available? }.each do |piece|
-          return if piece.valid_moves[1].include? attacker.position
-        end
-        # See if the user can block the attacker
-        unless (attacker.is_a? Knight) || (attacker.is_a? Pawn)
-          attack_range = range_between_squares(attacker.position, king.position)
-
-          game_pieces.select { |p| p.available? }.each do |piece|
-            moves = piece.valid_moves[0]
-            return if attack_range.length > (attack_range - moves).length
-          end
-        end
+        return if attacker_can_be_captured?(attacker)
+        return if attacker_can_be_blocked?(attacker, king.position)
       end
 
       @checkmate = true
@@ -231,6 +216,22 @@ class Game
     end
   end
 
+  def attacker_can_be_captured?(attacker)
+    @game_pieces.select { |p| p.available? }.each do |piece|
+      return true if piece.valid_moves[1].include? attacker.position
+    end ; false
+  end
+
+  def attacker_can_be_blocked?(attacker, kings_position)
+    return false if (attacker.is_a? Knight) || (attacker.is_a? Pawn)
+    attack_range = range_between_squares(attacker.position, kings_position)
+
+    @game_pieces.select { |p| p.available? }.each do |piece|
+      moves = piece.valid_moves[0]
+      return true if attack_range.length > (attack_range - moves).length
+    end ; false
+  end
+
   def does_move_expose_king?(piece, move, king, result=false)
     captured_piece = piece_in_position(move)
     captured_piece.captured = true unless captured_piece.nil?
@@ -238,12 +239,13 @@ class Game
     piece.position  = move
 
     update_status_of_kings
-
     result = true if king.in_check?
 
     piece.position = return_position
     2.times { piece.history.pop }
     captured_piece.captured = false unless captured_piece.nil?
+
+    update_status_of_kings
 
     result
   end
@@ -253,17 +255,19 @@ class Game
     # 1. The king and rook involved in castling must not have previously moved;
     # 2. The king and the rook must be on the same rank.
     # 3. The king may not currently be in check.
-    king, rook = get_rook_and_king_for_castling(corner)
-    return false if rook.nil? || king.nil?
     # 3. There must be no pieces between the king and the rook;
-    return false unless pieces_in_range(rook.position, king.position).empty?
     # 4. The king cannot move to a square under attack (i.e move into check)
     # 5. The king may not pass through a square under attack
-    range_between_squares(rook.position, king.position).each do |position|
-      next if position[0] < 2 # For castling to the left
-      return false unless get_attackers_of_position(position, @turn).empty?
-    end
+    king, rook = get_rook_and_king_for_castling(corner)
 
+    return false if rook.nil? || king.nil?
+    return false unless pieces_in_range(rook.position, king.position).empty?
+    return false unless path_clear_for_castling?(rook, king)
+
+    perform_castling(rook, king, corner)
+  end
+
+  def perform_castling(rook, king, corner)
     case corner
     when :l
       king.position = [2, king.position[1]]
@@ -271,7 +275,14 @@ class Game
     when :r
       king.position = [6, king.position[1]]
       rook.position = [5, rook.position[1]]
-    end; true
+    end ; true
+  end
+
+  def path_clear_for_castling?(rook, king)
+    range_between_squares(rook.position, king.position).each do |position|
+      next if position[0] < 2 # For castling to the left
+      return false unless get_attackers_of_position(position, @turn).empty?
+    end ; true
   end
 
   def get_rook_and_king_for_castling(corner)
@@ -342,6 +353,26 @@ class Game
 
   def finish
     exit
+  end
+  ###### R E S P O N S E #########
+  def format_response(response)
+    response = response.match /\d,\d \d,\d/
+
+    unless response.nil?
+      response = response.string.split(" ")
+      response.map! { |x| x.split(",") }
+      response.each { |x| x[0] = x[0].to_i ; x[1] = x[1].to_i }
+    end
+
+    response
+  end
+
+  def user_response_valid?(response)
+    return false if response.nil?
+
+    response.each do |r|
+      return false unless (r[0].between? *@boundary) && (r[1].between? *@boundary)
+    end ; true
   end
   ###### G E T T E R S #####################
   def checkmate?; @checkmate end
