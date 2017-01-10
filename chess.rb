@@ -17,7 +17,6 @@ class Game
 
     setup unless args.include? "empty"
 
-
     update_available_pieces
 
     game = self
