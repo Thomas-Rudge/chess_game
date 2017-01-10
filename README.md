@@ -46,6 +46,7 @@ You can see what pieces are on the board, and add new ones, by using the `game_p
 #    > boundary: [x.max, y.max]  *usually [0, 7] for an 8x8 board.
 #    > The game it belongs to.
 chess.game_pieces << Knight.new(0, [4, 5], [0, 7], chess)
+# If you use the push method with game_pieces you need to then call the update_available_pieces method
 
 # Get all pieces that haven't been used yet
 chess.game_pieces.select { |p| p.history.empty? }
@@ -102,7 +103,7 @@ chess.update_status_of_kings
 # Use checkmate? stalemate? to confirm any change.
 chess.checkmate?
  => false
-chess.check_game_state
+chess.update_game_state
 chess.checkmate?
  => true
 ``` 
