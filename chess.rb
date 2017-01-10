@@ -17,8 +17,6 @@ class Game
 
     setup unless args.include? "empty"
 
-    update_available_pieces
-
     game = self
     @game_pieces.define_singleton_method(:<<) do |val|
       self.push(val)
