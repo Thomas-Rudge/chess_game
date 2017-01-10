@@ -186,15 +186,15 @@ describe Game do
     end
   end
 
-  describe "#check_game_state" do
+  describe "#update_game_state" do
     context "neither king is in stalemate or checkmate" do
       it "will not declare stalemate or checkmate" do
-        game.check_game_state
+        game.update_game_state
         expect(game.stalemate?).to be false
         expect(game.checkmate?).to be false
 
         game.turn = 1
-        game.check_game_state
+        game.update_game_state
         expect(game.stalemate?).to be false
         expect(game.checkmate?).to be false
       end
@@ -208,7 +208,7 @@ describe Game do
         game.game_pieces << Pawn.new(0, [5, 6], [0, 7], game)
         game.game_pieces << King.new(0, [5, 5], [0, 7], game)
         game.turn = 1
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be true
         expect(game.checkmate?).to be false
@@ -220,7 +220,7 @@ describe Game do
         game.game_pieces << Pawn.new(1, [6, 6], [0, 7], game)
         game.game_pieces << King.new(0, [7, 4], [0, 7], game)
         game.game_pieces << Pawn.new(0, [7, 3], [0, 7], game)
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be true
         expect(game.checkmate?).to be false
@@ -231,7 +231,7 @@ describe Game do
         game.game_pieces << Pawn.new(1, [5, 3], [0, 7], game)
         game.game_pieces << Rook.new(1, [1, 1], [0, 7], game)
         game.game_pieces << King.new(0, [5, 2], [0, 7], game)
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be true
         expect(game.checkmate?).to be false
@@ -257,7 +257,7 @@ describe Game do
         game.game_pieces << Pawn.new(0, [1, 4], [0, 7], game)
         game.game_pieces << Pawn.new(0, [4, 3], [0, 7], game)
         game.game_pieces << Pawn.new(0, [7, 1], [0, 7], game)
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be true
         expect(game.checkmate?).to be false
@@ -272,7 +272,7 @@ describe Game do
         game.piece_in_position([5, 1]).position = [5, 2]
         game.piece_in_position([6, 1]).position = [6, 3]
         game.update_status_of_kings
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be false
         expect(game.checkmate?).to be true
@@ -294,7 +294,7 @@ describe Game do
         game.game_pieces << Pawn.new(0, [6, 1], [0, 7], game)
         game.game_pieces << Pawn.new(0, [7, 3], [0, 7], game)
         game.update_status_of_kings
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be false
         expect(game.checkmate?).to be true
@@ -306,7 +306,7 @@ describe Game do
         game.game_pieces << Rook.new(0, [7, 0], [0, 7], game)
         game.turn = 1
         game.update_status_of_kings
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be false
         expect(game.checkmate?).to be true
@@ -322,7 +322,7 @@ describe Game do
         game.game_pieces << Bishop.new(0, [3, 4], [0, 7], game)
         game.turn = 1
         game.update_status_of_kings
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be false
         expect(game.checkmate?).to be false
@@ -340,11 +340,36 @@ describe Game do
         game.game_pieces << Pawn.new(0, [6, 1], [0, 7], game)
         game.game_pieces << Rook.new(0, [2, 4], [0, 7], game)
         game.update_status_of_kings
-        game.check_game_state
+        game.update_game_state
 
         expect(game.stalemate?).to be false
         expect(game.checkmate?).to be false
       end
+    end
+  end
+
+  describe "#format_response" do
+    it "returns nil for invalid responses" do
+      expect(game.format_response "Banana").to be_nil
+      expect(game.format_response "1,23,4").to be_nil
+      expect(game.format_response "08,53").to  be_nil
+    end
+
+    it "returns an array of coordinates when given a valid response" do
+      expect(game.format_response "5,2 6,3").to eql [[5,2],[6,3]]
+    end
+  end
+
+  describe "#user_response_valid?" do
+    let (:bad_response)  { game.format_response "5,9 6,3" }
+    let (:good_response) { game.format_response "5,2 6,3" }
+
+    it "returns false when user response outside of boundaries" do
+      expect(game.user_response_valid? bad_response).to be false
+    end
+
+    it "returns true when user response within boundaries" do
+      expect(game.user_response_valid? good_response).to be true
     end
   end
 end
